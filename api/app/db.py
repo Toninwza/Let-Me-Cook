@@ -24,6 +24,16 @@ def init_db() -> None:
     # Import models so their tables are registered before create_all.
     from app import models  # noqa: F401
 
+    if engine.dialect.name == "postgresql":
+        # pgvector, for product_embedding. Supabase keeps extensions in the "extensions" schema,
+        # which is on its default search_path; plain Postgres has no such schema.
+        with engine.begin() as conn:
+            has_schema = conn.execute(
+                text("select 1 from pg_namespace where nspname = 'extensions'")
+            ).first()
+            schema = " with schema extensions" if has_schema else ""
+            conn.execute(text(f"create extension if not exists vector{schema}"))
+
     SQLModel.metadata.create_all(engine)
 
     if engine.dialect.name == "postgresql":

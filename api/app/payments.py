@@ -37,16 +37,21 @@ async def create_promptpay(order_id: str, amount_thb: float, email: str) -> Prom
         params={
             "amount": round(amount_thb * 100),  # satang
             "currency": "thb",
-            "payment_method_types": ["promptpay"],
+            # Newer Stripe API versions reject payment_method_types; methods come from the Dashboard.
+            # PromptPay is a QR, not a redirect, so no return_url is needed.
+            "automatic_payment_methods": {"enabled": True, "allow_redirects": "never"},
             "payment_method_data": {"type": "promptpay", "billing_details": {"email": email}},
             "confirm": True,
             "metadata": {"order_id": order_id},
         },
     )
     qr = intent.next_action.promptpay_display_qr_code
+    # Stripe omits fields it has no value for, so read the optional ones with getattr.
+    data = getattr(qr, "data", None) or ""
+    expires_at = getattr(qr, "expires_at", None)
     # In test mode the QR encodes a URL to Stripe's authorize/fail page; scanning or opening it works.
-    test_url = qr.data if is_test_mode() and qr.data.startswith("https://") else None
-    expires = datetime.fromtimestamp(qr.expires_at, UTC) if qr.expires_at else None
+    test_url = data if is_test_mode() and data.startswith("https://") else None
+    expires = datetime.fromtimestamp(expires_at, UTC) if expires_at else None
     return PromptPayQR(intent.id, qr.image_url_png, test_url, expires)
 
 

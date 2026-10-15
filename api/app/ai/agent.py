@@ -15,7 +15,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from app import catalog
-from app.ai.llm import generate
+from app.ai.llm import LLMOutput, generate
 from app.schemas import HistoryMessage, ProductHit, ProductOption, SearchResult, UserProfile
 
 _FIXTURE = Path(__file__).parent / "fixtures" / "chat_stream.json"
@@ -31,7 +31,7 @@ _MAX_OPTIONS = 3
 # ---------- what Gemini returns ----------
 
 
-class Plan(BaseModel):
+class Plan(LLMOutput):
     action: Literal["search", "clarify", "checkout", "answer"] = Field(
         description="search: find products. clarify: request too vague to search well. "
         "checkout: user picks a product shown before. answer: reply without searching "
@@ -54,12 +54,12 @@ class Plan(BaseModel):
     reply: str | None = Field(default=None, description="For answer: Thai reply, 1 to 3 sentences")
 
 
-class Pick(BaseModel):
+class Pick(LLMOutput):
     product_id: str
     reason: str = Field(description="Thai, 1 or 2 short sentences with real numbers from the data")
 
 
-class Ranking(BaseModel):
+class Ranking(LLMOutput):
     message: str = Field(description="Thai, 1 or 2 sentences introducing the picks, or explaining none fit")
     picks: list[Pick] = Field(default_factory=list, description="Best first, at most 3, only ids from the candidates")
     no_result_reason: str | None = Field(default=None, description="Thai, why nothing fits. Required when picks is empty")
@@ -69,7 +69,23 @@ class Ranking(BaseModel):
     )
 
 
+class Broaden(LLMOutput):
+    keywords: list[str] = Field(
+        default_factory=list,
+        description="Wider search words: the generic product type, synonyms, related product types, Thai and English",
+    )
+    query: str | None = Field(default=None, description="The need restated in plain Thai for a meaning-based search")
+
+
 # ---------- prompts ----------
+
+_BROADEN_SYSTEM = """A product search in a Thai shop found nothing. Suggest wider search words that
+could still satisfy the need: the generic product type, synonyms, and closely related product types
+from the categories we sell. Do not drop the user's actual need (a user asking for shoes must not
+get chairs). If no category we sell could fit, return the generic product type only. JSON only.
+"""
+
+
 
 _PLAN_SYSTEM = """You are the request reader of a Thai shopping chat bot. Read the user's latest
 message with the chat so far and decide one action. Reply in JSON only.
@@ -82,8 +98,11 @@ message with the chat so far and decide one action. Reply in JSON only.
 - Comparing or asking about products already shown -> "answer", using their data.
 - Resolve relative dates ("พรุ่งนี้", "วันอาทิตย์", "ภายในสัปดาห์นี้") from today's date.
 - "งบ 3000" means max_price 3000. Prices are in baht.
-- Write keywords that appear in Thai product titles: e.g. ["เก้าอี้", "ergonomic"], not
-  ["เก้าอี้ทำงานที่ดีสำหรับหลัง"]. Color or style words go in keywords too.
+- Keywords are matched as substrings and a product needs only one match, so search wide: always
+  include the generic product type in Thai and English, then the specific words. E.g. "iPad Pro"
+  -> ["ipad", "แท็บเล็ต", "tablet", "pro"]; "เก้าอี้ทำงาน ergonomic" -> ["เก้าอี้", "ergonomic"].
+  Never a whole sentence. Color or style words go in keywords too.
+- Set category only when it is clearly one of the given categories.
 """
 
 _RANK_SYSTEM = """You pick products for a Thai shopping chat bot. You get the user's request, their
@@ -94,7 +113,10 @@ Reply in JSON only.
 - Each reason is Thai, 1 or 2 short sentences, concrete: rating and review count, price after
   discount, delivery day, or a match with the user's interests. No generic praise.
 - If nothing fits, return no picks, a no_result_reason and 1 to 3 alternatives the user can tap.
-- message: Thai, 1 or 2 sentences, polite male bot voice ending with "ครับ". No emoji.
+  Base the reason only on the search facts given (no match, out of stock, over budget, late
+  delivery). Never claim something the facts do not show, such as "sold out" when nothing matched.
+- message: Thai, 1 or 2 sentences, polite male bot voice ending with "ครับ". No greeting, do not use
+  the user's name, no emoji. This is the middle of a chat.
 """
 
 
@@ -228,15 +250,26 @@ async def run_agent(
         yield _step(step_id, label)
         category = plan.category if plan.category in categories else None
         deliver_by = _parse_date(plan.deliver_by)
+        filters = dict(min_price=plan.min_price, max_price=plan.max_price, deliver_by=deliver_by, limit=_CANDIDATES)
         result: SearchResult = await catalog.search_products(
-            plan.keywords,
-            category=category,
-            min_price=plan.min_price,
-            max_price=plan.max_price,
-            deliver_by=deliver_by,
-            limit=_CANDIDATES,
+            plan.keywords, category=category, query=plan.summary, **filters
         )
         yield _step(step_id, label, "done", f"เจอ {result.matched} รายการที่ตรงคำค้น")
+
+        if result.matched == 0:
+            # Nothing matched at all (not even before budget/stock filters): try once with wider words.
+            step_id, label = "retry", "ค้นใหม่ด้วยคำที่กว้างขึ้น"
+            yield _step(step_id, label)
+            wider = await generate(
+                _BROADEN_SYSTEM,
+                f"request: {text}\nunderstood as: {plan.summary}\nkeywords that found nothing: "
+                f"{json.dumps(plan.keywords, ensure_ascii=False)}\n"
+                f"categories we sell: {json.dumps(categories, ensure_ascii=False)}",
+                Broaden,
+            )
+            result = await catalog.search_products(wider.keywords, query=wider.query or plan.summary, **filters)
+            tried = ", ".join(wider.keywords[:4]) or "คำทั่วไป"
+            yield _step(step_id, label, "done", f"ลองคำว่า {tried}: เจอ {result.matched} รายการ")
 
         excluded = [
             (result.excluded_out_of_stock, "ตัดของหมดสต็อก"),
@@ -272,7 +305,8 @@ async def run_agent(
             yield {"type": "message_delta", "text": chunk}
 
         if options:
-            yield {"type": "options", "items": options, "reason": None, "alternatives": []}
+            items = [o.model_dump(mode="json") for o in options]
+            yield {"type": "options", "items": items, "reason": None, "alternatives": []}
         else:
             budget = f" ในงบ {_baht(plan.max_price)} บาท" if plan.max_price else ""
             yield {

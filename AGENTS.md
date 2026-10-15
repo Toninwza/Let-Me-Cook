@@ -73,7 +73,17 @@ cd api && uv run python -m app.ai.try "หาเก้าอี้ทำงา�
 
 Prints every event `run_agent` yields. Use it to check your output against the contract.
 Needs `GEMINI_API_KEY` in `api/.env`. Messages `/clarify`, `/no_results`, `/pick`, `/error` replay
-fixture turns instead, so the web can render every event without a key. In Git Bash
+fixture turns instead, so the web can render every event without a key.
+
+## Agent eval set
+
+```bash
+cd api && uv run python -m evals.run              # all cases in api/evals/cases.json
+cd api && uv run python -m evals.run pick_first   # one case
+```
+
+Run it after every prompt or catalog change. Calls `run_agent` directly, writes nothing to the DB.
+Semantic search only runs on Postgres with embeddings, so run it against Supabase for real numbers. In Git Bash
 prefix the command with `MSYS_NO_PATHCONV=1`, or Git Bash rewrites `/clarify` into a Windows path.
 
 ## Git

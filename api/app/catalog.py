@@ -5,12 +5,21 @@ from datetime import date, datetime, timedelta, timezone
 
 from sqlmodel import Session, select
 
+from app import embeddings
 from app.db import engine
 from app.models import Product, Shop
 from app.schemas import ProductHit, SearchResult, ShopInfo
 
 # Fixed offset instead of zoneinfo: Windows Python has no tz database without the tzdata package.
 _BANGKOK = timezone(timedelta(hours=7))
+
+# Semantic match = similarity >= _SEM_MIN and within _SEM_WINDOW of the best match.
+# gemini-embedding-001 scores sit in a narrow band (unrelated ~0.55-0.60, related ~0.63-0.77 on our
+# catalog), so this is recall only; the agent's ranking step rejects near misses.
+# Re-check these numbers with evals/run.py when the catalog grows.
+_SEM_MIN = 0.62
+_SEM_WINDOW = 0.08
+_KEYWORD_BONUS = 0.05
 
 
 def today() -> date:
@@ -53,22 +62,28 @@ def _search(
     deliver_by: date | None,
     in_stock_only: bool,
     limit: int,
+    similarity: dict[str, float],
 ) -> SearchResult:
     words = [k.strip().lower() for k in keywords if k and k.strip()]
     wanted_category = category.strip().lower() if category else None
+    cutoff = max(_SEM_MIN, max(similarity.values(), default=0) - _SEM_WINDOW)
 
-    scored: list[tuple[int, ProductHit]] = []
+    scored: list[tuple[float, ProductHit]] = []
     for hit in _all_hits():
         if wanted_category and hit.category.lower() != wanted_category:
             continue
         haystack = " ".join([hit.title, hit.description, hit.category, *hit.tags]).lower()
-        score = sum(1 for w in words if w in haystack)
-        if words and score == 0:
+        keyword_hits = sum(1 for w in words if w in haystack)
+        sim = similarity.get(hit.product_id)
+        semantic_hit = sim is not None and sim >= cutoff
+        if (words or similarity) and not keyword_hits and not semantic_hit:
             continue
-        scored.append((score, hit))
+        # Without embeddings this is the keyword count, as before.
+        relevance = (sim or 0) + _KEYWORD_BONUS * keyword_hits if similarity else keyword_hits
+        scored.append((relevance, hit))
 
     out_of_stock = price = late = 0
-    kept: list[tuple[int, ProductHit]] = []
+    kept: list[tuple[float, ProductHit]] = []
     for score, hit in scored:
         if in_stock_only and hit.stock <= 0:
             out_of_stock += 1
@@ -100,9 +115,12 @@ async def search_products(
     deliver_by: date | None = None,
     in_stock_only: bool = True,
     limit: int = 10,
+    query: str | None = None,
 ) -> SearchResult:
+    # `query` (the need in plain words) adds semantic matches on Postgres; ignored on SQLite.
+    similarity = await embeddings.similarities(query) if query else {}
     return await asyncio.to_thread(
-        _search, keywords, category, min_price, max_price, deliver_by, in_stock_only, limit
+        _search, keywords, category, min_price, max_price, deliver_by, in_stock_only, limit, similarity
     )
 
 

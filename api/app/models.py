@@ -3,8 +3,11 @@
 from datetime import UTC, date, datetime
 from uuid import uuid4
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import JSON, Column
 from sqlmodel import Field, SQLModel
+
+from app.gemini import EMBED_DIM
 
 
 def new_id(prefix: str) -> str:
@@ -41,6 +44,17 @@ class Product(SQLModel, table=True):
     rating: float = 0
     review_count: int = 0
     image_url: str | None = None
+
+
+class ProductEmbedding(SQLModel, table=True):
+    """Semantic search vector per product. Postgres (pgvector) only; SQLite keeps the table unused."""
+
+    __tablename__ = "product_embedding"
+
+    product_id: str = Field(foreign_key="product.id", primary_key=True)
+    # Hash of the embedded text, so re-seeding only re-embeds products whose text changed.
+    content_hash: str
+    embedding: list[float] = Field(sa_column=Column(Vector(EMBED_DIM), nullable=False))
 
 
 class AppUser(SQLModel, table=True):

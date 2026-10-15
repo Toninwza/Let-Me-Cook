@@ -173,6 +173,7 @@ async def search_products(
     deliver_by: date | None = None,
     in_stock_only: bool = True,
     limit: int = 10,
+    query: str | None = None,        # the need in plain words, for semantic search
 ) -> SearchResult: ...
 
 async def get_product(product_id: str) -> ProductHit | None: ...
@@ -181,8 +182,14 @@ async def list_categories() -> list[str]: ...
 ```
 
 Matching: a product matches when any keyword is a case-insensitive substring of its title,
-description, category or tags. Thai has no spaces, so pass short keywords (`["เก้าอี้", "ergonomic"]`),
-not the whole sentence. Ranking: number of keywords matched, then rating, then review count.
+description, category or tags, **or** (Postgres only) its embedding is close to `query`. Thai has
+no spaces, so pass short keywords (`["เก้าอี้", "ergonomic"]`), not the whole sentence.
+Ranking: semantic similarity plus a small bonus per keyword matched, then rating, then review count.
+Without embeddings (SQLite, or no `GEMINI_API_KEY`) it is keyword only, ranked by keywords matched.
+
+Semantic search uses pgvector on Supabase and `gemini-embedding-001` (768 dims) in the
+`product_embedding` table. `python -m app.seed` refreshes embeddings; `python -m app.embeddings`
+does it alone. It only re-embeds products whose text changed.
 
 ## Chat events (SSE) [P0]
 
@@ -208,7 +215,8 @@ Rules:
 
 1. `agent_step`: send `running` when the work starts and `done` (or `error`) with the same `step_id`
    when it ends. The web updates that line in place. Labels describe work that really happened,
-   with real numbers from `SearchResult` where possible.
+   with real numbers from `SearchResult` where possible. Step ids in use: `parse`, `profile`,
+   `search`, `retry` (only when the first search matched nothing), `filter`, `rank`, `resolve`.
 2. `options` with 0 items **must** have `reason` (why nothing fits) and at least one entry in
    `alternatives` (Thai suggestions the user can tap, sent back as the next message).
 3. `options` with items: `reason` may be null; every item has its own `reason`.

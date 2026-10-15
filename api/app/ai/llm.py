@@ -1,30 +1,31 @@
 """Thin Gemini wrapper: one call in, one validated pydantic object out."""
 
-from functools import cache
-from typing import TypeVar
+from typing import Any, TypeVar
 
-from google import genai
 from google.genai import types
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from app.config import settings
+from app.gemini import client
+
+
+class LLMOutput(BaseModel):
+    """Base for Gemini response schemas: a null for a field with a default means "use the default"."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _nulls_to_defaults(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            fields = cls.model_fields
+            return {k: v for k, v in data.items() if v is not None or k not in fields or fields[k].is_required()}
+        return data
+
 
 T = TypeVar("T", bound=BaseModel)
 
 
-class LLMNotConfigured(RuntimeError):
-    pass
-
-
-@cache
-def _client() -> genai.Client:
-    if not settings.gemini_api_key:
-        raise LLMNotConfigured("GEMINI_API_KEY is not set in api/.env")
-    return genai.Client(api_key=settings.gemini_api_key)
-
-
 async def generate(system: str, prompt: str, schema: type[T], temperature: float = 0.2) -> T:
-    response = await _client().aio.models.generate_content(
+    response = await client().aio.models.generate_content(
         model=settings.gemini_model,
         contents=prompt,
         config=types.GenerateContentConfig(

@@ -3,13 +3,16 @@
 uv run python -m app.seed [path/to/data.json]
 """
 
+import asyncio
 import json
 import sys
 from pathlib import Path
 
 from sqlmodel import Session
 
+from app import embeddings
 from app.db import engine, init_db
+from app.gemini import GeminiNotConfigured
 from app.models import AppUser, Product, Shop
 
 _DEFAULT = Path(__file__).resolve().parents[1] / "seed" / "data.json"
@@ -28,6 +31,12 @@ def seed(path: Path) -> None:
             session.merge(AppUser(**row))
         session.commit()
     print(f"seeded {len(data['shops'])} shops, {len(data['products'])} products, {len(data['users'])} users")
+
+    if embeddings.enabled():
+        try:
+            print(f"embedded {asyncio.run(embeddings.sync())} products for semantic search")
+        except GeminiNotConfigured:
+            print("skipped embeddings: set GEMINI_API_KEY, then run: uv run python -m app.embeddings")
 
 
 if __name__ == "__main__":
