@@ -20,7 +20,6 @@ Backend (http://localhost:8000, docs at `/api/docs`):
 ```bash
 cd api
 cp .env.example .env    # optional: leave DATABASE_URL empty to use local SQLite
-uv run python -m app.seed              # load api/seed/data.json (safe to rerun)
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
