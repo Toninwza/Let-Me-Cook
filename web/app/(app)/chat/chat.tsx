@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { AgentEvent, Order, ProductOption, UserProfile, createSession, listProducts, sendMessage } from "@/lib/api";
 import { useBotVoice, useVoiceInput } from "@/lib/hooks";
 import Magnet from "@/components/magnet";
+import { MenuButton } from "@/components/app-shell";
 import OrderCard from "@/components/order-card";
 import ProductWidget from "@/components/product-widget";
 import StepsPanel, { Step } from "@/components/steps-panel";
@@ -173,13 +174,11 @@ export default function Chat() {
   }
 
   return (
-    <div className="mx-auto flex h-dvh w-full max-w-md flex-col bg-ground md:max-w-3xl md:border-x md:border-line lg:max-w-4xl">
-      <header className="flex items-center gap-3 border-b border-line bg-paper px-3 py-2.5">
-        <Link href="/home" aria-label="หน้าแรก" className="flex h-10 w-10 items-center justify-center rounded-full bg-forest hover:opacity-85">
-          <Magnet size={20} tips="#E9EEEA" />
-        </Link>
-        <div className="min-w-0 flex-1">
-          <div className="text-[15px] font-semibold">PULL bot</div>
+    <div className="flex h-full min-h-0 w-full flex-col bg-ground">
+      <header className="flex items-center gap-2 border-b border-line bg-paper px-2 py-2.5 md:gap-3 md:px-7 md:py-0 md:h-[68px]">
+        <MenuButton className="text-ink hover:bg-ground" />
+        <div className="min-w-0 flex-1 md:flex md:items-center md:gap-3">
+          <div className="text-[15px] font-semibold md:text-lg md:font-bold">Chatbot</div>
           <div className="flex items-center gap-1.5 text-xs text-muted">
             <span className="h-1.5 w-1.5 rounded-full bg-basil" />
             ค้นจากร้านบนแพลตฟอร์ม
@@ -209,7 +208,8 @@ export default function Chat() {
         </Link>
       </header>
 
-      <main className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+      <main className="flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-4 md:px-6 md:py-6">
         {sessionError && (
           <div className="rounded-xl bg-danger-soft p-3 text-sm text-danger">
             {sessionError}{" "}
@@ -252,10 +252,12 @@ export default function Chat() {
           return <BotMessage key={i} turn={turn} disabled={busy} onReply={send} onBuy={(p) => setCheckout(p)} />;
         })}
         <div ref={bottom} />
+        </div>
       </main>
 
       {micError && <p className="border-t border-line bg-danger-soft px-4 py-2 text-[13px] text-danger">{micError}</p>}
-      <form onSubmit={onSubmit} className="flex gap-2 border-t border-line bg-paper p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <form onSubmit={onSubmit} className="border-t border-line bg-paper p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:border-0 md:bg-ground md:px-7 md:pb-5">
+        <div className="mx-auto flex w-full max-w-3xl gap-2 md:rounded-full md:border-[1.5px] md:border-[#DDE2DE] md:bg-paper md:p-1.5">
         <button
           type="button"
           onClick={toggleMic}
@@ -299,6 +301,7 @@ export default function Chat() {
             <path d="M4 12l16-8-6 16-2-7z" />
           </svg>
         </button>
+        </div>
       </form>
 
       {checkout && (

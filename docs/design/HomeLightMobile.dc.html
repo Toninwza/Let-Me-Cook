@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>หน้าแรกธีมสว่าง (มือถือ)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&amp;family=Unbounded:wght@600;800&amp;display=swap">
+<style>
+body{margin:0}
+button{font-family:inherit}
+textarea{font-family:inherit}
+textarea:focus{outline:none}
+.hide-sb{scrollbar-width:none}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: #F4F5F2; color: #17211D; font-family: 'IBM Plex Sans Thai', 'Noto Sans Thai', system-ui, sans-serif; font-size: 14px; line-height: 1.5; overflow: hidden">
+
+  <header style="display: flex; align-items: center; gap: 6px; padding: 10px 8px 10px 6px; background: #FFFFFF; border-bottom: 1px solid #E2E5E0">
+    <button aria-label="เปิดเมนู" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border: 0; background: transparent; color: #17211D; border-radius: 12px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h16"/></svg></button>
+    <span style="display: flex; align-items: center; gap: 8px; flex-grow: 1">
+      <svg width="22" height="23" viewBox="0 0 120 124" aria-hidden="true"><path d="M8 0 H44 V70 a16 16 0 0 0 32 0 V0 H112 V70 a52 52 0 0 1 -104 0 Z" fill="#F2A93B"/><rect x="8" y="0" width="36" height="22" fill="#9AA39E"/><rect x="76" y="0" width="36" height="22" fill="#9AA39E"/></svg>
+      <span style="font-family: 'Unbounded', system-ui, sans-serif; font-weight: 800; font-size: 17px">PULL</span>
+    </span>
+    <a href="OrderTracking.dc.html" aria-label="ออเดอร์ของฉัน" style="position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #17211D; border-radius: 12px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg><span style="position: absolute; top: 7px; right: 7px; width: 9px; height: 9px; border-radius: 50%; background: #F2A93B; border: 2px solid #FFFFFF"></span></a>
+  </header>
+
+  <div style="flex-grow: 1; overflow: hidden; padding: 16px; display: flex; flex-direction: column; gap: 16px">
+    <div>
+      <h1 style="margin: 0; font-size: 22px; font-weight: 700">สวัสดี คุณมิ้นท์</h1>
+      <p style="margin: 2px 0 0; color: #56625C; font-size: 13.5px">บอกครั้งเดียวว่าอยากได้อะไร bot ดึงมาให้ 3 ตัว</p>
+    </div>
+
+    <section aria-label="บอก bot" style="background: #FFFFFF; border: 1.5px solid #DDE2DE; border-radius: 22px; padding: 14px 12px 12px 16px; display: flex; flex-direction: column; gap: 8px">
+      <label for="hm-prompt" style="font-size: 12px; font-weight: 600; color: #56625C">บอก bot ว่าอยากได้อะไร</label>
+      <textarea id="hm-prompt" rows="2" placeholder="เช่น หาเก้าอี้ทำงาน งบ 3,000" style="border: 0; resize: none; background: transparent; color: #17211D; font-size: 16px; line-height: 1.5; padding: 0"></textarea>
+      <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px">
+        <button aria-label="พูดแทนพิมพ์" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border: 1px solid #C9D1CC; background: #FFFFFF; color: #17211D; border-radius: 50%"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+        <a href="AppShellMobile.dc.html" style="height: 44px; padding: 0 16px 0 18px; display: flex; align-items: center; gap: 6px; background: #1E6F50; color: #FFFFFF; font-weight: 600; border-radius: 999px; text-decoration: none">เริ่มแชท<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+    </section>
+
+    <div class="hide-sb" style="display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px; padding: 0 16px">
+      <sc-for list="{{starters}}" as="s" hint-placeholder-count="3">
+        <a href="AppShellMobile.dc.html" style="flex-shrink: 0; min-height: 40px; display: flex; align-items: center; padding: 0 14px; border: 1px solid #DDE2DE; background: #FFFFFF; color: #3A433E; border-radius: 999px; text-decoration: none; font-size: 13px; white-space: nowrap">{{s}}</a>
+      </sc-for>
+    </div>
+
+    <section aria-label="ออเดอร์ที่กำลังมา" style="background: #FFFFFF; border: 1px solid #E2E5E0; border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; justify-content: space-between; align-items: center"><h2 style="margin: 0; font-size: 14.5px; font-weight: 700">ออเดอร์ที่กำลังมา</h2><a href="OrderTracking.dc.html" style="font-size: 12.5px; font-weight: 600; color: #1E6F50; text-decoration: none">ดูทั้งหมด</a></div>
+      <div style="display: flex; gap: 10px; align-items: center">
+        <span style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 10px; background: #E7D7B8; color: #4A3510; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center">เก้าอี้</span>
+        <span style="display: flex; flex-direction: column; min-width: 0; line-height: 1.35"><span style="font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">Ergonomic Flex Pro สีดำ</span><span style="font-size: 12px; color: #14513A; font-weight: 600">กำลังจัดส่ง · ถึง อา. 18 ต.ค.</span></span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px"><span style="height: 4px; border-radius: 4px; background: #1E6F50"></span><span style="height: 4px; border-radius: 4px; background: #1E6F50"></span><span style="height: 4px; border-radius: 4px; background: #DDE2DE"></span></div>
+    </section>
+
+    <section aria-label="สินค้าที่ bot ดึงมาให้" style="display: flex; flex-direction: column; gap: 10px; min-height: 0">
+      <h2 style="margin: 0; font-size: 16px; font-weight: 700">ดึงมาให้คุณ</h2>
+      <div class="hide-sb" style="display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px; padding: 0 16px">
+        <sc-for list="{{cats}}" as="c" hint-placeholder-count="5">
+          <button style="{{c.style}}">{{c.label}}</button>
+        </sc-for>
+      </div>
+      <div class="hide-sb" style="display: flex; gap: 10px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 4px">
+        <sc-for list="{{products}}" as="p" hint-placeholder-count="3">
+          <a href="AppShellMobile.dc.html" style="flex-shrink: 0; width: 150px; display: flex; flex-direction: column; background: #FFFFFF; border: 1px solid #E2E5E0; border-radius: 14px; overflow: hidden; text-decoration: none; color: inherit">
+            <div style="{{p.imgStyle}}">{{p.mark}}</div>
+            <div style="padding: 10px; display: flex; flex-direction: column; gap: 3px">
+              <div style="font-weight: 600; font-size: 12.5px; line-height: 1.35; min-height: 34px">{{p.title}}</div>
+              <div style="font-size: 11.5px; color: #56625C">ส่ง {{p.date}} · {{p.shop}}</div>
+              <div style="font-size: 15.5px; font-weight: 700; font-variant-numeric: tabular-nums">{{p.price}}</div>
+            </div>
+          </a>
+        </sc-for>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const cats = ['ทั้งหมด', 'เก้าอี้', 'หูฟัง', 'โคมไฟ', 'แท็บเล็ต'];
+    const items = [
+      { mark: 'เก้าอี้', bg: '#E7D7B8', fg: '#4A3510', title: 'Ergonomic Flex Pro สีดำ', shop: 'ErgoHome', date: 'อา. 18', price: '฿2,961' },
+      { mark: 'หูฟัง', bg: '#1F2A26', fg: '#E9EEEA', title: 'หูฟังตัดเสียงรบกวน Quiet 7', shop: 'SoundLab', date: 'ส. 17', price: '฿2,490' },
+      { mark: 'โคมไฟ', bg: '#F3D9D2', fg: '#7A2E1E', title: 'โคมไฟตั้งโต๊ะ LED ถนอมสายตา', shop: 'BrightHome', date: 'ส. 17', price: '฿590' }
+    ];
+    return {
+      starters: ['เก้าอี้ทำงาน งบ 3,000', 'หูฟังประชุม ส่งพรุ่งนี้', 'ของขวัญวันเกิดแม่'],
+      cats: cats.map((c, i) => ({
+        label: c,
+        style: 'flex-shrink: 0; height: 36px; padding: 0 16px; border-radius: 999px; font-size: 13.5px; font-weight: 600; ' + (i === 0 ? 'border: 1px solid #17211D; background: #17211D; color: #FFFFFF' : 'border: 1px solid #DDE2DE; background: #FFFFFF; color: #3A433E')
+      })),
+      products: items.map((p) => ({
+        mark: p.mark, title: p.title, shop: p.shop, date: p.date, price: p.price,
+        imgStyle: 'height: 88px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; background: ' + p.bg + '; color: ' + p.fg
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

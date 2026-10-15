@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { DEMO_USER_ID, Order, ProductHit, UserProfile, getUser, listOrders, listProducts } from "@/lib/api";
+import { DEMO_USER_ID, ProductHit, UserProfile, getUser, listProducts } from "@/lib/api";
 import { baht } from "@/lib/format";
 import { pickVaried } from "@/lib/pick";
 import Magnet from "@/components/magnet";
-import SideMenu from "./side-menu";
+import { MenuButton } from "@/components/app-shell";
 
 const STARTERS = ["หาเก้าอี้ทำงาน งบ 3,000 ส่งภายในวันอาทิตย์", "หูฟังประชุม ส่งพรุ่งนี้"];
 
@@ -19,29 +19,17 @@ const CHIPS = [
 
 export default function Home() {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [orders, setOrders] = useState<Order[]>([]);
   const [chips, setChips] = useState<ProductHit[]>([]);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     getUser(DEMO_USER_ID).then(setUser, () => {});
-    listOrders({ userId: DEMO_USER_ID }).then(setOrders, () => {});
     listProducts().then((all) => setChips(pickVaried(all, CHIPS.length)), () => {});
   }, []);
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col overflow-hidden bg-forest text-paper">
+    <div className="mx-auto flex min-h-full w-full max-w-md flex-col overflow-hidden text-paper md:max-w-xl">
       <header className="flex items-center gap-2.5 px-3 pt-4">
-        <button
-          onClick={() => setMenuOpen(true)}
-          aria-label="เปิดเมนู"
-          aria-expanded={menuOpen}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#2E6B53] hover:bg-[#13241C]"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-            <path d="M4 7h16M4 12h10M4 17h16" />
-          </svg>
-        </button>
+        <MenuButton className="border border-[#2E6B53] hover:bg-[#13241C]" />
         <div className="min-w-0 flex-1 text-[13px] text-[#A9C9B8]">{user ? `สวัสดี ${user.display_name}` : "สวัสดี"}</div>
         <Link href="/orders" aria-label="ออเดอร์ของฉัน" className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#2E6B53] hover:bg-[#13241C]">
           <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -105,7 +93,6 @@ export default function Home() {
         </Link>
       </div>
 
-      {menuOpen && <SideMenu user={user} orders={orders} onClose={() => setMenuOpen(false)} />}
     </div>
   );
 }
