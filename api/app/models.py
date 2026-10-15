@@ -94,5 +94,10 @@ class Order(SQLModel, table=True):
     status: str
     promptpay_payload: str | None = None
     slip_check: dict | None = Field(default=None, sa_column=Column(JSON))
+    # Set only when a slip is accepted, so the unique index rejects a slip reused on another order.
+    slip_ref: str | None = Field(default=None, unique=True)
+    tracking_number: str | None = Field(default=None, unique=True)
     created_at: datetime = Field(default_factory=utcnow)
     paid_at: datetime | None = None
+    shipped_at: datetime | None = None
+    delivered_at: datetime | None = None

@@ -27,7 +27,7 @@ class UserProfile(BaseModel):
     address: Address
     interests: list[str] = Field(default_factory=list)
     purchase_history: list[PastPurchase] = Field(default_factory=list)
-    discount_percent: int = 0
+    discount_percent: int = Field(default=0, ge=0, le=90)
 
 
 class ShopInfo(BaseModel):
@@ -81,4 +81,5 @@ class Receiver(BaseModel):
 class SlipCheck(BaseModel):
     ok: bool
     amount: float | None
+    ref: str | None
     reason: str

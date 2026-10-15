@@ -3,6 +3,7 @@
 import asyncio
 import json
 from collections.abc import AsyncIterator
+from datetime import date
 from pathlib import Path
 
 from app.schemas import HistoryMessage, UserProfile
@@ -27,6 +28,7 @@ async def run_agent(
     text: str,
     user_profile: UserProfile,
     history: list[HistoryMessage],
+    today: date,
 ) -> AsyncIterator[dict]:
     for event in _TURNS[_pick_turn(text.strip())]["events"]:
         await asyncio.sleep(_DELAY.get(event["type"], 0))

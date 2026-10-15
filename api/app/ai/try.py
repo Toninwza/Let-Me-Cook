@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 from app.ai import run_agent
+from app.catalog import today
 from app.schemas import UserProfile
 
 _SEED = Path(__file__).resolve().parents[2] / "seed" / "data.json"
@@ -21,7 +22,7 @@ def _demo_profile() -> UserProfile:
 
 
 async def main(text: str) -> None:
-    async for event in run_agent("s_try", text, _demo_profile(), []):
+    async for event in run_agent("s_try", text, _demo_profile(), [], today()):
         print(json.dumps(event, ensure_ascii=False))
 
 

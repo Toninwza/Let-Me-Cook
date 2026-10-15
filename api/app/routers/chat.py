@@ -9,6 +9,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
+from app import catalog
 from app.ai import run_agent
 from app.db import engine
 from app.models import AppUser, ChatSession, Message
@@ -112,7 +113,8 @@ async def _stream(session_id: str, text: str, profile: UserProfile, history: lis
     option_ids: list[str] = []
     try:
         async with asyncio.timeout(AGENT_TIMEOUT_S):
-            async with aclosing(run_agent(session_id, text, profile, history)) as events:
+            agent = run_agent(session_id, text, profile, history, catalog.today())
+            async with aclosing(agent) as events:
                 async for event in events:
                     kind = event.get("type")
                     if kind == "done":
