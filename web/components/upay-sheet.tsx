@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   ApiError,
   Order,
+  PaymentMethod,
   ProductHit,
   UserProfile,
   cancelOrder,
@@ -35,6 +36,7 @@ export function UPaySheet({
 }) {
   const maxQty = Math.max(1, Math.min(product.stock, 9));
   const [quantity, setQuantity] = useState(Math.min(Math.max(1, initialQuantity), maxQty));
+  const [method, setMethod] = useState<PaymentMethod>("promptpay");
   const [phase, setPhase] = useState<Phase>("summary");
   const [order, setOrder] = useState<Order | null>(null);
   const [busy, setBusy] = useState(false);
@@ -61,7 +63,13 @@ export function UPaySheet({
     run(async () => {
       const created =
         order ??
-        (await createOrder({ session_id: sessionId, user_id: user.user_id, product_id: product.product_id, quantity }));
+        (await createOrder({
+          session_id: sessionId,
+          user_id: user.user_id,
+          product_id: product.product_id,
+          quantity,
+          payment_method: method,
+        }));
       setOrder(created);
       setOrder(await confirmOrder(created.order_id));
       setPhase("paying");
@@ -107,7 +115,7 @@ export function UPaySheet({
             </span>
             <div>
               <p className="text-sm font-semibold">U-Pay</p>
-              <p className="text-[11px] text-neutral-500">ชำระผ่าน PromptPay</p>
+              <p className="text-[11px] text-neutral-500">PromptPay หรือบัตร ผ่าน Stripe</p>
             </div>
           </div>
           {phase !== "paying" && (
@@ -160,6 +168,28 @@ export function UPaySheet({
               <p>🚚 ได้รับภายใน {formatDate(product.delivery_date)}</p>
             </div>
 
+            <fieldset className="space-y-2">
+              <legend className="mb-2 text-sm text-neutral-600">วิธีชำระเงิน</legend>
+              <div className="grid grid-cols-2 gap-2">
+                <MethodOption
+                  active={method === "promptpay"}
+                  disabled={!!order}
+                  onPick={() => setMethod("promptpay")}
+                  title="PromptPay"
+                  note="สแกน QR ในแอปธนาคาร"
+                  icon="📱"
+                />
+                <MethodOption
+                  active={method === "card"}
+                  disabled={!!order}
+                  onPick={() => setMethod("card")}
+                  title="บัตรเครดิต/เดบิต"
+                  note="Visa · Mastercard · JCB"
+                  icon="💳"
+                />
+              </div>
+            </fieldset>
+
             {error && <ErrorNote text={error} />}
 
             <button
@@ -167,14 +197,16 @@ export function UPaySheet({
               disabled={busy}
               className="w-full rounded-full bg-linear-to-r from-violet-600 to-fuchsia-600 py-3 text-sm font-semibold text-white shadow-md transition hover:brightness-110 disabled:opacity-60"
             >
-              {busy ? "กำลังสร้าง QR..." : `ยืนยันและชำระ ${baht.format(total)}`}
+              {busy ? "กำลังเตรียมการชำระเงิน..." : `ยืนยันและชำระ ${baht.format(total)}`}
             </button>
           </div>
         )}
 
         {phase === "paying" && order && (
           <div className="space-y-4 text-center">
-            <p className="text-sm text-neutral-600">สแกน QR ด้วยแอปธนาคารเพื่อชำระ</p>
+            <p className="text-sm text-neutral-600">
+              {order.payment_method === "card" ? "ชำระด้วยบัตรบนหน้าปลอดภัยของ Stripe" : "สแกน QR ด้วยแอปธนาคารเพื่อชำระ"}
+            </p>
             <p className="text-3xl font-bold text-neutral-900">{baht.format(order.total)}</p>
 
             {order.status === "payment_failed" ? (
@@ -185,9 +217,18 @@ export function UPaySheet({
                   disabled={busy}
                   className="rounded-full bg-red-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
                 >
-                  สร้าง QR ใหม่
+                  ลองชำระอีกครั้ง
                 </button>
               </div>
+            ) : order.payment_url ? (
+              <a
+                href={order.payment_url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-center gap-2 rounded-full bg-linear-to-r from-violet-600 to-fuchsia-600 py-3 text-sm font-semibold text-white shadow-md hover:brightness-110"
+              >
+                💳 ไปหน้าชำระเงินด้วยบัตร
+              </a>
             ) : (
               order.payment_qr_url && (
                 <div className="mx-auto w-fit rounded-3xl bg-white p-3 shadow-md ring-1 ring-violet-100">
@@ -279,4 +320,38 @@ function QtyButton({
 
 function ErrorNote({ text }: { text: string }) {
   return <p className="rounded-xl bg-red-50 p-2.5 text-xs text-red-700">{text}</p>;
+}
+
+function MethodOption({
+  active,
+  disabled,
+  onPick,
+  title,
+  note,
+  icon,
+}: {
+  active: boolean;
+  disabled: boolean;
+  onPick: () => void;
+  title: string;
+  note: string;
+  icon: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onPick}
+      disabled={disabled}
+      aria-pressed={active}
+      className={`rounded-2xl p-3 text-left transition disabled:opacity-60 ${
+        active ? "bg-violet-50 ring-2 ring-violet-500" : "bg-white ring-1 ring-neutral-200 hover:ring-violet-300"
+      }`}
+    >
+      <span className="text-lg" aria-hidden>
+        {icon}
+      </span>
+      <p className="mt-1 text-sm font-semibold">{title}</p>
+      <p className="text-[11px] text-neutral-500">{note}</p>
+    </button>
+  );
 }

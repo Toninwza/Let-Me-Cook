@@ -55,6 +55,54 @@ async def create_promptpay(order_id: str, amount_thb: float, email: str) -> Prom
     return PromptPayQR(intent.id, qr.image_url_png, test_url, expires)
 
 
+@dataclass
+class CheckoutPage:
+    session_id: str
+    url: str
+
+
+async def create_checkout(order_id: str, title: str, quantity: int, amount_thb: float, email: str) -> CheckoutPage:
+    """Stripe-hosted page for cards (Visa, Mastercard, JCB, Amex). Card data never touches our server.
+    Which methods it offers comes from the Dashboard (newer API versions reject payment_method_types)."""
+    done = f"{settings.web_url.rstrip('/')}/pay/done?order={order_id}"
+    session = await _client().v1.checkout.sessions.create_async(
+        params={
+            "mode": "payment",
+            "line_items": [
+                {
+                    # One line for the order total: it already includes quantity and the U-Tag discount.
+                    "price_data": {
+                        "currency": "thb",
+                        "unit_amount": round(amount_thb * 100),
+                        "product_data": {"name": f"{title} x {quantity}"},
+                    },
+                    "quantity": 1,
+                }
+            ],
+            "customer_email": email,
+            "success_url": done,
+            "cancel_url": f"{done}&cancelled=1",
+            "metadata": {"order_id": order_id},
+        },
+    )
+    return CheckoutPage(session.id, session.url)
+
+
+async def checkout_status(session_id: str) -> str:
+    """'paid', 'expired' or 'open'."""
+    session = await _client().v1.checkout.sessions.retrieve_async(session_id)
+    if session.payment_status == "paid":
+        return "paid"
+    return "expired" if session.status == "expired" else "open"
+
+
+async def expire_checkout(session_id: str) -> None:
+    try:
+        await _client().v1.checkout.sessions.expire_async(session_id)
+    except stripe.StripeError:
+        pass  # already paid or expired; the caller re-reads the status
+
+
 async def intent_status(payment_intent_id: str) -> str:
     """Stripe status: succeeded, processing, requires_action, requires_payment_method, canceled."""
     intent = await _client().v1.payment_intents.retrieve_async(payment_intent_id)

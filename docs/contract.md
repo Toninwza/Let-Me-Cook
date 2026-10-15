@@ -114,11 +114,12 @@ These numbers exist so `agent_step` labels can state real facts ("ตัดส�
 | `total` | number | `subtotal - utag_discount`, never below 10 baht (Stripe minimum for THB) |
 | `delivery_date` | str | |
 | `address` | Address | |
-| `payment_method` | `"promptpay"` or `"avax_escrow"` | `promptpay` is paid through Stripe. `avax_escrow` is [P3], returns 400 until built |
+| `payment_method` | `"promptpay"`, `"card"` or `"avax_escrow"` | `promptpay`: QR in our sheet (Stripe). `card`: Visa / Mastercard / JCB / Amex on Stripe's hosted Checkout page; card numbers never reach our server. `avax_escrow` is [P3], returns 400 until built |
 | `status` | see below | |
 | `payment_qr_url` | str or null | PNG of the PromptPay QR from Stripe. Show it as `<img>`. Set after confirm |
 | `payment_test_url` | str or null | Stripe test mode only: page where the presenter taps "authorize" or "fail" instead of scanning. Null with a live key |
 | `payment_expires_at` | str or null | when the QR stops working |
+| `payment_url` | str or null | `card` only: Stripe Checkout page. Show it as a link the user taps (opening it after an `await` gets popup-blocked). Stripe sends the customer back to `/pay/done` on our web; the chat tab learns the result by polling as usual. Test card `4242 4242 4242 4242`, any future date, any CVC |
 | `created_at` | str | |
 | `paid_at` | str or null | |
 | `shipped_at` | str or null | |
@@ -257,8 +258,8 @@ Thai `detail` and a `Retry-After` header in seconds. Limits per IP: chat message
 
 | method | path | body | response |
 |---|---|---|---|
-| POST | `/api/orders` | `{ "session_id": str or null, "user_id": str, "product_id": str, "quantity": int, "payment_method": "promptpay" }` | `Order` with status `pending_confirm` (the summary step) |
-| POST | `/api/orders/{id}/confirm` | | `Order` with status `awaiting_payment` and `payment_qr_url`. Also allowed from `payment_failed` (makes a new QR). 503 if Stripe is not configured |
+| POST | `/api/orders` | `{ "session_id": str or null, "user_id": str, "product_id": str, "quantity": int, "payment_method": "promptpay" or "card" }` | `Order` with status `pending_confirm` (the summary step) |
+| POST | `/api/orders/{id}/confirm` | | `Order` with status `awaiting_payment` and `payment_qr_url` (promptpay) or `payment_url` (card). Also allowed from `payment_failed` (makes a new QR). 503 if Stripe is not configured |
 | POST | `/api/orders/{id}/cancel` | | `Order` |
 | POST | `/api/orders/{id}/status` | `{ "status": "shipped" or "delivered" }` | `Order`. Only `paid` to `shipped` to `delivered`; any other step is 409 |
 | GET | `/api/orders/{id}` | | `Order` |

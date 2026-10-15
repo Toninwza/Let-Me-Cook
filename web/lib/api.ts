@@ -46,6 +46,8 @@ export type UserProfile = {
 
 export type ProductHit = Omit<ProductOption, "reason">;
 
+export type PaymentMethod = "promptpay" | "card";
+
 export type OrderStatus =
   | "pending_confirm"
   | "awaiting_payment"
@@ -70,11 +72,12 @@ export type Order = {
   total: number;
   delivery_date: string;
   address: Address;
-  payment_method: "promptpay" | "avax_escrow";
+  payment_method: PaymentMethod | "avax_escrow";
   status: OrderStatus;
   payment_qr_url: string | null;
   payment_test_url: string | null;
   payment_expires_at: string | null;
+  payment_url: string | null;
   created_at: string;
   paid_at: string | null;
   shipped_at: string | null;
@@ -166,7 +169,8 @@ export const createOrder = (body: {
   user_id: string;
   product_id: string;
   quantity: number;
-}) => call<Order>("/api/orders", json({ ...body, payment_method: "promptpay" }));
+  payment_method: PaymentMethod;
+}) => call<Order>("/api/orders", json(body));
 
 export const confirmOrder = (id: string) => call<Order>(`/api/orders/${id}/confirm`, { method: "POST" });
 export const cancelOrder = (id: string) => call<Order>(`/api/orders/${id}/cancel`, { method: "POST" });

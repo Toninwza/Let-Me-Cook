@@ -32,7 +32,7 @@ class OrderIn(BaseModel):
     user_id: str
     product_id: str
     quantity: int = Field(default=1, ge=1, le=99)
-    payment_method: Literal["promptpay", "avax_escrow"] = "promptpay"
+    payment_method: Literal["promptpay", "card", "avax_escrow"] = "promptpay"
 
 
 class StatusIn(BaseModel):
@@ -63,6 +63,7 @@ def _out(order: Order, shop: Shop) -> OrderOut:
         payment_qr_url=order.payment_qr_url,
         payment_test_url=order.payment_test_url,
         payment_expires_at=order.payment_expires_at,
+        payment_url=order.payment_url,
         created_at=order.created_at,
         paid_at=order.paid_at,
         shipped_at=order.shipped_at,
@@ -141,16 +142,21 @@ def _mark_failed(order_id: str) -> None:
 
 async def _sync(order: Order) -> None:
     """Ask Stripe how an awaiting_payment order is doing and store the result."""
-    if order.status != "awaiting_payment" or not order.payment_intent_id:
+    if order.status != "awaiting_payment" or not (order.payment_intent_id or order.checkout_session_id):
         return
     try:
-        status = await payments.intent_status(order.payment_intent_id)
+        if order.checkout_session_id:
+            status = await payments.checkout_status(order.checkout_session_id)
+            paid, failed = status == "paid", status == "expired"
+        else:
+            status = await payments.intent_status(order.payment_intent_id)
+            paid, failed = status == "succeeded", status in ("requires_payment_method", "canceled")
     except (stripe.StripeError, payments.PaymentsNotConfigured):
         log.exception("stripe status check failed for %s", order.id)
         return
-    if status == "succeeded":
+    if paid:
         await asyncio.to_thread(_mark_paid, order.id)
-    elif status in ("requires_payment_method", "canceled"):
+    elif failed:
         await asyncio.to_thread(_mark_failed, order.id)
 
 
@@ -212,13 +218,19 @@ async def confirm_order(order_id: str) -> OrderOut:
     hit = await catalog.get_product(order.product_id)
     if hit is None or hit.stock < order.quantity:
         raise HTTPException(409, "สินค้าหมดระหว่างทำรายการ")
+    email = f"{order.user_id}@example.com"  # demo users have no real email
     try:
-        qr = await payments.create_promptpay(order.id, order.total, f"{order.user_id}@example.com")
+        if order.payment_method == "card":
+            page = await payments.create_checkout(order.id, order.title, order.quantity, order.total, email)
+            return await asyncio.to_thread(
+                _save, order.id, status="awaiting_payment", checkout_session_id=page.session_id, payment_url=page.url
+            )
+        qr = await payments.create_promptpay(order.id, order.total, email)
     except payments.PaymentsNotConfigured:
         raise HTTPException(503, "ระบบชำระเงินยังไม่ได้ตั้งค่า")
     except stripe.StripeError:
         log.exception("stripe create failed for %s", order.id)
-        raise HTTPException(502, "สร้าง QR ชำระเงินไม่สำเร็จ ลองใหม่อีกครั้งครับ")
+        raise HTTPException(502, "สร้างรายการชำระเงินไม่สำเร็จ ลองใหม่อีกครั้งครับ")
     return await asyncio.to_thread(
         _save,
         order.id,
@@ -235,8 +247,11 @@ async def cancel_order(order_id: str) -> OrderOut:
     order = await asyncio.to_thread(_get, order_id)
     if order.status not in CANCELLABLE:
         raise HTTPException(409, "ยกเลิกคำสั่งซื้อนี้ไม่ได้แล้ว")
-    if order.payment_intent_id:
-        await payments.cancel(order.payment_intent_id)
+    if order.payment_intent_id or order.checkout_session_id:
+        if order.checkout_session_id:
+            await payments.expire_checkout(order.checkout_session_id)
+        else:
+            await payments.cancel(order.payment_intent_id)
         # The user may have paid a moment before cancelling: trust Stripe over the button.
         current = await _synced(order_id)
         if current.status == "paid":

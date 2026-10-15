@@ -110,6 +110,9 @@ class Order(SQLModel, table=True):
     payment_qr_url: str | None = None
     payment_test_url: str | None = None
     payment_expires_at: datetime | None = None
+    # payment_method "card": Stripe Checkout session and its hosted page
+    checkout_session_id: str | None = Field(default=None, unique=True)
+    payment_url: str | None = None
     tracking_number: str | None = Field(default=None, unique=True)
     created_at: datetime = Field(default_factory=utcnow)
     paid_at: datetime | None = None

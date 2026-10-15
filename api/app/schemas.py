@@ -99,11 +99,12 @@ class Order(BaseModel):
     total: float
     delivery_date: date
     address: Address
-    payment_method: Literal["promptpay", "avax_escrow"]
+    payment_method: Literal["promptpay", "card", "avax_escrow"]
     status: OrderStatus
     payment_qr_url: str | None
     payment_test_url: str | None
     payment_expires_at: datetime | None
+    payment_url: str | None
     created_at: datetime
     paid_at: datetime | None
     shipped_at: datetime | None
