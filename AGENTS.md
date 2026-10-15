@@ -39,8 +39,8 @@ Do not edit files you do not own. If you need a change there, ask the owner.
 3. **Every chat stream ends with exactly one `done` event**, also after an `error`.
 4. **The AI module only talks to the rest of the app through** `app.catalog` (product data) and
    `app.schemas` (types). It does not open DB sessions, read env files for DB, or call our HTTP API.
-5. **Routes never import from inside `app/ai/`** except the two public functions:
-   `run_agent`, `transcribe`. Stripe lives in `app/payments.py`, never in `ai/`.
+5. **Routes never import from inside `app/ai/`** except the three public functions:
+   `run_agent`, `transcribe`, `speak`. Stripe lives in `app/payments.py`, never in `ai/`.
 6. **The browser only calls `/api/*`.** It never talks to Supabase directly (RLS is on and has no
    policies, so the anon key is blocked on purpose).
 7. **Secrets:** this repo is public. Keys go in `api/.env` (git ignored). Never commit real keys or

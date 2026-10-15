@@ -152,7 +152,9 @@ async def run_agent(
     today: date,                     # current Asia/Bangkok date, to resolve "พรุ่งนี้", "วันศุกร์"
 ) -> AsyncIterator[dict]: ...
 
-async def transcribe(audio_bytes: bytes, mime_type: str) -> str: ...          # ElevenLabs Scribe [P3]
+async def transcribe(audio_bytes: bytes, mime_type: str) -> str: ...          # ElevenLabs scribe_v2, built
+
+async def speak(text: str) -> bytes: ...                                      # ElevenLabs eleven_v3, MP3, built
 ```
 
 `run_agent` yields event dicts exactly as in "Chat events" below. It may end with `done` itself; if
@@ -258,7 +260,8 @@ stock, 400 `avax_escrow`, 502 Stripe call failed (Thai `detail`).
 
 | method | path | body | response |
 |---|---|---|---|
-| POST | `/api/voice/transcribe` | multipart `file` (audio) | `{ "text": str }` |
+| POST | `/api/voice/transcribe` | multipart `file` (audio) | `{ "text": str }`. **Built.** Send what `MediaRecorder` gives (`audio/webm`), up to 10 MB. Errors: 422 too short or no speech heard, 413 too big, 503 no `ELEVENLABS_API_KEY`, 502 ElevenLabs failed. All `detail` texts are Thai and can be shown as is. The web then sends `text` as a normal chat message |
+| POST | `/api/voice/speak` | `{ "text": str }` (1 to 600 chars) | `audio/mpeg` bytes of the bot reading `text` in Thai. **Built.** Call it after the turn's `done` with the bot text (all `message_delta` joined, or the `clarify` question), then play it: `new Audio(URL.createObjectURL(blob)).play()`. Takes about 3 s. Same errors as transcribe (503, 502, 422 empty text) |
 | POST | `/api/voice/enroll` | multipart `file` (audio) + `user_id` | reserved, not built yet |
 | POST | `/api/voice/verify` | multipart `file` (audio) + `user_id` | `{ "match": bool, "score": number }`. Reserved, not built yet |
 
