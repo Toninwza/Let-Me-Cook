@@ -10,7 +10,8 @@ Status tags: **[P0]** built tonight, **[P2]** checkout (by 02:00), **[P3]** Frid
 
 - Money: THB as a JSON number, at most 2 decimals. `price` is what the user pays per unit after the
   product discount.
-- Dates: `YYYY-MM-DD`. Timestamps: ISO 8601 UTC.
+- Dates: `YYYY-MM-DD`, always the Asia/Bangkok calendar date (`delivery_date`, `deliver_by`, the
+  `today` passed to `run_agent`). Timestamps: ISO 8601 UTC.
 - IDs are strings with a prefix: `u_` user, `s_` session, `shop_` shop, `p_` product, `o_` order.
 - JSON keys are `snake_case` everywhere, including the web.
 - Python types live in `api/app/schemas.py` (pydantic). The tables below mirror them.
@@ -26,7 +27,7 @@ Status tags: **[P0]** built tonight, **[P2]** checkout (by 02:00), **[P3]** Frid
 | `address` | Address | default delivery address |
 | `interests` | list[str] | free tags, e.g. `["work from home", "minimal"]` |
 | `purchase_history` | list[PastPurchase] | newest first |
-| `discount_percent` | int | U-Tag discount applied at checkout, 0 to 100 |
+| `discount_percent` | int | U-Tag discount applied at checkout, 0 to 90 |
 
 `Address`: `{ "line": str, "district": str, "province": str, "postcode": str }`
 
@@ -96,8 +97,8 @@ These numbers exist so `agent_step` labels can state real facts ("ตัดส�
 
 ### SlipCheck
 
-`{ "ok": bool, "amount": number or null, "reason": str }`. `reason` is Thai and shown to the user
-when `ok` is false.
+`{ "ok": bool, "amount": number or null, "ref": str or null, "reason": str }`. `ref` is the
+reference number printed on the slip. `reason` is Thai and shown to the user when `ok` is false.
 
 ### Order [P2]
 
@@ -114,7 +115,7 @@ when `ok` is false.
 | `subtotal` | number | `unit_price * quantity` |
 | `utag_discount_percent` | int | |
 | `utag_discount` | number | `round(subtotal * percent / 100, 2)` |
-| `total` | number | `subtotal - utag_discount` |
+| `total` | number | `subtotal - utag_discount`, never below 1 baht |
 | `delivery_date` | str | |
 | `address` | Address | |
 | `payment_method` | `"promptpay"` or `"avax_escrow"` | `avax_escrow` is [P3], returns 400 until built |
@@ -123,16 +124,21 @@ when `ok` is false.
 | `slip_check` | SlipCheck or null | result of the last slip upload |
 | `created_at` | str | |
 | `paid_at` | str or null | |
+| `shipped_at` | str or null | |
+| `delivered_at` | str or null | |
+| `tracking_number` | str or null | created by the backend when the order turns `shipped`: `"LMC"` + 8 random digits |
 
 Status flow:
 
 ```
-pending_confirm --confirm--> awaiting_payment --slip ok--> paid
+pending_confirm --confirm--> awaiting_payment --slip ok--> paid --ship--> shipped --deliver--> delivered
                                    ^    |
                                    |    slip not ok
                                    +-- slip_rejected (upload again)
 pending_confirm / awaiting_payment --cancel--> cancelled
 ```
+
+When an order turns `paid`, `Product.stock` drops by `quantity`.
 
 ## AI module interface (Python, `app.ai`)
 
@@ -144,6 +150,7 @@ async def run_agent(
     text: str,
     user_profile: UserProfile,
     history: list[HistoryMessage],   # oldest first, excludes the current `text`
+    today: date,                     # current Asia/Bangkok date, to resolve "พรุ่งนี้", "วันศุกร์"
 ) -> AsyncIterator[dict]: ...
 
 async def transcribe(audio_bytes: bytes, mime_type: str) -> str: ...          # ElevenLabs Scribe [P3]
@@ -240,8 +247,9 @@ All under `/api`. Errors use FastAPI's default `{ "detail": str }` with a 4xx/5x
 |---|---|---|---|
 | POST | `/api/orders` | `{ "session_id": str or null, "user_id": str, "product_id": str, "quantity": int, "payment_method": "promptpay" }` | `Order` with status `pending_confirm` (the summary step) |
 | POST | `/api/orders/{id}/confirm` | | `Order` with status `awaiting_payment` and `promptpay_payload` |
-| POST | `/api/orders/{id}/slip` | multipart `file` (image) | `Order`, status `paid` or `slip_rejected` |
+| POST | `/api/orders/{id}/slip` | multipart `file` (image) | `Order`, status `paid` or `slip_rejected`. A slip whose `ref` was already used by another order is `slip_rejected` with a Thai `reason` |
 | POST | `/api/orders/{id}/cancel` | | `Order` |
+| POST | `/api/orders/{id}/status` | `{ "status": "shipped" or "delivered" }` | `Order`. Only `paid` to `shipped` to `delivered`; any other step is 409 |
 | GET | `/api/orders/{id}` | | `Order` |
 | GET | `/api/orders` | query `shop_id` | `list[Order]`, newest first. The shop page polls this every 3 s |
 
@@ -250,3 +258,18 @@ All under `/api`. Errors use FastAPI's default `{ "detail": str }` with a 4xx/5x
 | method | path | body | response |
 |---|---|---|---|
 | POST | `/api/voice/transcribe` | multipart `file` (audio) | `{ "text": str }` |
+| POST | `/api/voice/enroll` | multipart `file` (audio) + `user_id` | reserved, not built yet |
+| POST | `/api/voice/verify` | multipart `file` (audio) + `user_id` | `{ "match": bool, "score": number }`. Reserved, not built yet |
+
+## Web behavior [P2]
+
+- The order card in the chat polls `GET /api/orders/{id}` every 3 s and stops when the status is
+  `delivered` or `cancelled`.
+- It shows a three step bar: จ่ายแล้ว / กำลังจัดส่ง (with `tracking_number`) / ได้รับแล้ว.
+
+## Security note
+
+- There is no auth on purpose, for the demo only.
+- All seed data (names, addresses) must be fake.
+- The demo shop uses a PromptPay ID of a team member, and demo products are priced in the tens of
+  baht.

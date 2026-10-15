@@ -1,5 +1,5 @@
 {
-  "_note": "Example run_agent output per turn, matching docs/contract.md. The stub agent replays it. Product ids match api/seed/data.json. Dates assume today is 2026-10-15. The stub plays 'search' by default; send '/clarify', '/no_results', '/pick' or '/error' as the message to play another turn.",
+  "_note": "Example run_agent output per turn, matching docs/contract.md. The stub agent replays it. Product ids match api/seed/data.json. Dates assume run_agent was called with today = 2026-10-15 (Asia/Bangkok). The stub plays 'search' by default; send '/clarify', '/no_results', '/pick' or '/error' as the message to play another turn.",
   "turns": {
     "search": {
       "input": "หาเก้าอี้ทำงาน ergonomic งบ 3000 สีดำ ส่งภายในวันอาทิตย์",
