@@ -61,7 +61,7 @@ export default function Login() {
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       setBusy(false);
       if (error) setError(thaiError(error.message));
-      else router.push("/chat");
+      else router.push("/");
       return;
     }
     const { data, error } = await supabase.auth.signUp({
@@ -71,14 +71,14 @@ export default function Login() {
     });
     setBusy(false);
     if (error) setError(thaiError(error.message));
-    else if (data.session) router.push("/chat");
+    else if (data.session) router.push("/");
     else setNotice("สมัครแล้ว ส่งลิงก์ยืนยันไปที่อีเมลของคุณ กดลิงก์แล้วกลับมาเข้าสู่ระบบได้เลย");
   }
 
   async function google() {
     if (!supabase) return;
     setError(null);
-    const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${window.location.origin}/chat` } });
+    const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${window.location.origin}/` } });
     if (error) setError(thaiError(error.message));
   }
 
@@ -167,8 +167,8 @@ export default function Login() {
                   <div className="truncate text-xs text-muted">{signedInEmail}</div>
                 </div>
               </div>
-              <Link href="/chat" className="flex h-[50px] items-center justify-center rounded-[14px] bg-basil font-semibold text-paper hover:bg-basil-dark">
-                ไปที่ Chatbot
+              <Link href="/" className="flex h-[50px] items-center justify-center rounded-[14px] bg-basil font-semibold text-paper hover:bg-basil-dark">
+                ไปหน้าแรก
               </Link>
               <button onClick={signOut} className="h-11 rounded-xl text-sm text-muted underline hover:text-ink">
                 ออกจากระบบ
@@ -273,7 +273,7 @@ export default function Login() {
           </div>
 
           <div className="flex flex-col items-center gap-1">
-            <Link href="/chat" className="flex min-h-10 items-center text-[13.5px] text-ink-2 underline hover:text-basil">
+            <Link href="/" className="flex min-h-10 items-center text-[13.5px] text-ink-2 underline hover:text-basil">
               ลองใช้แบบผู้ใช้เดโม่
             </Link>
             <span className="text-[11.5px] text-faint">การเข้าสู่ระบบดูแลโดย Supabase Auth</span>

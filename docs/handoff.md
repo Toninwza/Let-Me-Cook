@@ -78,11 +78,12 @@ After switching branches, **restart `npm run dev`** (stale CSS otherwise: brand 
 
 ## 5. What is built (all in `web/`, verified in the browser, API at `40f4d7f`)
 
-Routes: `/` landing (prompt box, magnetic-field product cards), `/home` magnet home,
-`/chat` chatbot, `/login`, `/orders` my orders, `/shop/[shopId]` shop page (polls 3 s),
-`/pay/done` Stripe Checkout return page. `(app)` route group wraps `/home` and `/chat` in the shell.
+Routes: `/` **home** (the old "landing": big prompt box, magnetic-field product cards; the user decided
+it is the real home for the version without e-commerce), `/chat` chatbot, `/login`, `/orders` my
+orders, `/shop/[shopId]` shop page (polls 3 s), `/pay/done` Stripe Checkout return page, `/home`
+redirects to `/`. The `(app)` route group wraps `/` and `/chat` in the shell.
 
-- **App shell** `components/app-shell.tsx`: desktop sidebar (260 px, collapses to 76 px with tooltips),
+- **App shell** `components/app-shell.tsx`: **light** desktop sidebar (white, 260 px, collapses to 76 px with tooltips),
   mobile drawer opened by `MenuButton` (pages put it in their header), Esc closes. Nav has only
   "หน้าแรก" and "Chatbot" (user's choice). User card at the bottom.
 - **Auth** `components/auth-provider.tsx` + `lib/supabase.ts` + `/login`: email+password sign in and
@@ -92,7 +93,7 @@ Routes: `/` landing (prompt box, magnetic-field product cards), `/home` magnet h
 - **Chat** `app/(app)/chat/chat.tsx`: SSE events (agent_step, message_delta, clarify, options,
   checkout_request, error, done), steps panel (collapses to "bot ทำงาน N ขั้น"), product widget with
   cards and a compare table (`components/product-widget.tsx`), voice input and spoken replies
-  (`lib/hooks.ts`: `useVoiceInput`, `useBotVoice`, from the friend, ElevenLabs), `?q=` auto-sends the
+  (`lib/hooks.ts`: `useRecorder` (hold, tap, lock, cancel, 120 s cap), `useBotVoice`, from the friend, ElevenLabs), `?q=` auto-sends the
   first message (used by landing and home).
 - **U-Pay** `components/upay-sheet.tsx`: summary (qty, shop discount, U-Tag line when the backend
   applies one), method choice PromptPay QR or card (Stripe Checkout in a new tab), QR step polls the
@@ -113,23 +114,16 @@ the U-Pay summary (the user asked to remove the 5% badge everywhere else). Strip
 Design sources are in `docs/design/` (open the `.dc.html` for exact spacing and copy; they use the
 Claude Design format with `{{holes}}`, treat them as visual specs, not code to run).
 
-### 6a. Light theme (user said the dark green home plus dark sidebar "does not feel like a shopping app")
-- Whole app on light ground: page `#F4F5F2`, cards `#FFFFFF`, borders `#E2E5E0`. Green is accent only
-  (primary buttons, active nav, status chips). Saffron only for discounts and the "AI" badge.
-- **Sidebar light** (`HomeLight.dc.html`): white, 1 px right border, active item = light green
-  `#E3F1EA` with a solid green icon tile, user card with outline. Applies to desktop sidebar and
-  mobile drawer in `components/app-shell.tsx`. Logo magnet uses real colors (saffron body, grey tips).
-- **Home `/home`** (desktop `HomeLight.dc.html`, mobile `HomeLightMobile.dc.html`): greeting and
-  delivery area, big prompt box (textarea, mic, "เริ่มแชท") that sends `/chat?q=...`, starter chips,
-  "ดึงมาให้คุณ" with category tabs filtering real products (`listProducts`, categories from the
-  data), 3-column product cards (mobile: horizontal scroll), right column "ออเดอร์ที่กำลังมา" (real
-  orders, hide if none) and "แชทล่าสุด" (**only when the sessions endpoint exists**, else hide it,
-  never fake data). Cards link to `/chat?q=<product title>`.
-- Remove the old green `home.tsx` look. Keep `/` landing as is (it is already light).
-- Tokens live in `web/app/globals.css` (`--color-basil #1E6F50`, `forest #0F3D2C`, `saffron #F2A93B`,
-  `ink #17211D`, etc.). Reuse them.
+### 6a. Light theme: DONE 2026-10-16 (uncommitted until the user says so)
+- Sidebar and mobile drawer are light (white, active item `#E3F1EA` with a solid green icon tile).
+- Home is the former landing page, inside the shell at `/` (mobile has the menu button in its header,
+  headline 44 px on desktop to fit next to the sidebar, product field shows from the `xl` breakpoint).
+  The dark green `/home` page and its widget drawer were deleted.
+- **Kept for later:** `docs/design/HomeLight.dc.html` and `HomeLightMobile.dc.html` are a
+  shopping-dashboard home (category tabs, product grid, orders and recent chats widgets). Use them as
+  the home of the future e-commerce version. Not wanted now.
 
-### 6b. Voice recording like Messenger (`VoiceInput.dc.html`)
+### 6b. Voice recording like Messenger (`VoiceInput.dc.html`): BUILT, needs a real-mic test on phone and desktop
 Current behavior: tap to start, tap again to stop and send, cap 30 s, no cancel. Replace with:
 - **Tap** (press shorter than ~250 ms) = hands-free mode: bar shows trash (cancel), timer, waveform,
   big green **send button that stops, transcribes and sends in one tap**.
@@ -161,14 +155,27 @@ It is meant to grow into an e-commerce simulation later (more main nav items).
 > หาจาก option_ids ล่าสุดที่ตามด้วยคำขอซื้อ หรือจากออเดอร์) และ `order` (order_id, status, total
 > หรือ null, หาจาก orders.session_id) ส่วน `GET /sessions/{id}/messages` ที่มีอยู่ใช้เปิดแชทเดิมต่อได้เลย
 
-### Supabase auth reaching the API (friend)
-> เว็บล็อกอินด้วย Supabase Auth แล้ว จะส่ง `Authorization: Bearer <access_token>` มากับทุก request
-> ขอให้ API ตรวจ token (JWKS ของโปรเจกต์ หรือเรียก `/auth/v1/user`), ใช้ `sub` เป็น `app_user.id`
-> สร้างแถว `app_user` ให้ตอน login ครั้งแรก (ชื่อจาก `user_metadata.name`, ที่อยู่ว่างให้กรอกทีหลัง)
-> และให้ `POST /sessions`, `/orders` ใช้ user จาก token แทน `user_id` ที่ส่งมาจากหน้าเว็บ
-
-When the friend ships it: add the header in `lib/api.ts` (`call()` and `sendMessage()`, token from
-`supabase.auth.getSession()`), drop `DEMO_USER_ID`, and update `docs/contract.md` first (rule 2).
+### Real login: PAUSED by the user on 2026-10-16 (resume later, plan agreed)
+The login page works against Supabase but the API still serves everyone as `u_demo`. Agreed plan:
+- **Guests keep the demo user** (the demo must never break). Logged-in users use their own identity.
+- **Address:** a new user has no address (`app_user.address` is NOT NULL, orders need it). Ask for it
+  at the **first checkout** (short form in the U-Pay summary when the address is empty, saved once)
+  **and add an "edit address" screen** the user can open any time (the user asked for this).
+- Web side (ours, needs `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`, not provided
+  yet; turn Confirm email off in Supabase): send `Authorization: Bearer <token>` on every request in
+  `lib/api.ts` (`call()` and `sendMessage()`), drop `DEMO_USER_ID` for logged-in users, add the
+  address form and edit screen.
+- API side (friend's files, draft message to send):
+> ขอ 3 อย่างครับ 1) ตรวจ token ของ Supabase โดยเรียก `GET {SUPABASE_URL}/auth/v1/user` พร้อม
+> Authorization กับ apikey (ตั้ง `SUPABASE_URL` และ anon key ใน env ของ API) 2) `POST /api/users/me`
+> สร้างแถว `app_user` ถ้ายังไม่มี (id = sub, ชื่อจาก user_metadata.name, ที่อยู่ว่าง) แล้วคืน
+> UserProfile ถ้าไม่มี token คืน `u_demo` 3) `PATCH /api/users/me` แก้ที่อยู่ และให้
+> `POST /sessions`, `POST /orders`, `GET /orders` ใช้ผู้ใช้จาก token แทน `user_id` ที่เว็บส่งมา
+> (ตอนนี้ใครรู้ order_id ก็ดูออเดอร์ได้ เพราะไม่มีการตรวจสิทธิ์)
+- Test: sign up a new account, enter the home page, user card shows name and email, chat, buy,
+  the order appears only for that account, sign out and the app is the demo user again.
+- If the friend cannot ship it before the demo: ship only the web side (login shows the name in the
+  menu, data stays demo). Safe, nothing breaks.
 
 ## 8. The design canvas (optional reference)
 
@@ -207,10 +214,10 @@ table must be recreated or altered (`create_all` does not add columns).
 
 ## 10. Next steps in order
 
-1. Build 6a (light theme: sidebar, drawer, `/home`), check desktop (1280) and mobile (375).
-2. Build 6b (voice). Test pointer logic by dispatching events; ask the user to try the mic.
+1. Commit the 6a work when the user says so.
+2. (done) 6b voice built; gestures verified with synthetic pointer events and a fake mic stream. Ask the user to try the real mic.
 3. If the user approves the sessions design: build the web side behind the friend's endpoint.
-4. Wire login to the API once the friend ships token support.
+4. (paused) Real login, see the section above.
 5. Deploy: Cloud Run for `api/` then `web/` (HTTPS needed for the mic; `API_URL` is baked in at build
    time, deploy the API first). Dockerfiles exist. Create tables and seed on Supabase first. Min
    instances 1. Not done yet.
