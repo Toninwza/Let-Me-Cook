@@ -1,57 +1,62 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
 import { Order, getOrder } from "@/lib/api";
 import { baht } from "@/lib/format";
-import { usePoll } from "@/lib/hooks";
+import Magnet from "@/components/magnet";
 
-/** Shows the real order status (read from Stripe by the backend), not just "Stripe said OK". */
+const PAID = ["paid", "shipped", "delivered"];
+
+/** Stripe Checkout lands here. Shows the order status our API read from Stripe, not just the redirect. */
 export function PayDone() {
   const params = useSearchParams();
   const orderId = params.get("order");
   const cancelled = params.has("cancelled");
   const [order, setOrder] = useState<Order | null>(null);
+  const paid = order !== null && PAID.includes(order.status);
 
-  usePoll(
-    async () => {
-      if (orderId) setOrder(await getOrder(orderId));
-    },
-    2000,
-    Boolean(orderId) && order?.status !== "paid",
-    true,
-  );
-
-  const paid = order && ["paid", "shipped", "delivered"].includes(order.status);
+  useEffect(() => {
+    if (!orderId || paid) return;
+    const load = () => getOrder(orderId).then(setOrder, () => {});
+    const first = setTimeout(load, 0);
+    const timer = setInterval(load, 2000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(timer);
+    };
+  }, [orderId, paid]);
 
   return (
-    <div className="animate-rise w-full max-w-sm space-y-4 rounded-[2rem] bg-white p-8 text-center shadow-2xl ring-1 ring-violet-100">
+    <div className="flex w-full max-w-sm flex-col items-center gap-4 rounded-3xl bg-paper p-8 text-center shadow-[0_18px_50px_rgba(23,33,29,0.10)]">
       {paid ? (
         <>
-          <div className="animate-pop mx-auto grid h-20 w-20 place-items-center rounded-full bg-emerald-500 text-4xl text-white shadow-lg shadow-emerald-200">
-            ✓
-          </div>
-          <h1 className="text-lg font-semibold">ชำระเงินสำเร็จ</h1>
-          <p className="text-sm text-neutral-500">
-            {order.title} · {baht.format(order.total)}
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-basil-soft text-basil">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M5 12l5 5 9-10" />
+            </svg>
+          </span>
+          <h1 className="text-xl font-bold">ชำระเงินสำเร็จ</h1>
+          <p className="text-sm text-ink-2">
+            {order.title} · <span className="font-semibold tabular-nums">{baht(order.total)}</span>
           </p>
         </>
       ) : cancelled ? (
         <>
-          <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-neutral-100 text-3xl">↩</div>
-          <h1 className="text-lg font-semibold">ยังไม่ได้ชำระเงิน</h1>
-          <p className="text-sm text-neutral-500">กลับไปที่แชตเพื่อชำระอีกครั้งหรือเลือกวิธีอื่นได้ครับ</p>
+          <Magnet size={48} />
+          <h1 className="text-xl font-bold">ยังไม่ได้ชำระเงิน</h1>
+          <p className="text-sm text-ink-2">กลับไปที่แชทเพื่อจ่ายอีกครั้ง หรือเลือกวิธีจ่ายอื่นได้ครับ</p>
         </>
       ) : (
         <>
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-violet-200 border-t-violet-600" />
-          <h1 className="text-lg font-semibold">กำลังยืนยันการชำระเงิน...</h1>
+          <span className="h-12 w-12 animate-spin rounded-full border-4 border-basil-soft border-t-basil" />
+          <h1 className="text-xl font-bold">กำลังยืนยันการชำระเงิน</h1>
         </>
       )}
-      <p className="text-xs text-neutral-400">ปิดแท็บนี้แล้วกลับไปที่แชตได้เลย ใบเสร็จจะขึ้นในแชตเอง</p>
-      <Link href="/" className="inline-block rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white">
-        กลับไปที่แชต
+      <p className="text-xs text-muted">ปิดแท็บนี้แล้วกลับไปที่แชทได้เลย สถานะในแชทจะอัปเดตเอง</p>
+      <Link href="/orders" className="flex h-11 items-center rounded-xl bg-basil px-5 font-semibold text-paper transition-colors hover:bg-basil-dark">
+        ดูออเดอร์ของฉัน
       </Link>
     </div>
   );

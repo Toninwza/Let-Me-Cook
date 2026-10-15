@@ -1,65 +1,78 @@
 @import "tailwindcss";
 
-:root {
-  color-scheme: light;
-  --background: #f5f3ff;
-  --foreground: #1e1b2e;
+@theme {
+  --color-ink: #17211d;
+  --color-ink-2: #3a433e;
+  --color-muted: #56625c;
+  --color-faint: #6b756f;
+  --color-line: #e2e5e0;
+  --color-line-strong: #c9d1cc;
+  --color-ground: #f4f5f2;
+  --color-paper: #ffffff;
+  --color-basil: #1e6f50;
+  --color-basil-dark: #14513a;
+  --color-basil-soft: #e3f1ea;
+  --color-forest: #0f3d2c;
+  --color-saffron: #f2a93b;
+  --color-saffron-soft: #fff1d6;
+  --color-saffron-ink: #6b4a00;
+  --color-danger: #b42318;
+  --color-danger-soft: #fcebe8;
+  --font-sans: var(--font-plex-thai), "Noto Sans Thai", system-ui, sans-serif;
+  --font-display: var(--font-unbounded), var(--font-plex-thai), system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-thai), ui-sans-serif, system-ui, sans-serif;
+:root {
+  color-scheme: light;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
+  background: var(--color-ground);
+  color: var(--color-ink);
 }
 
-/* Horizontal card rail without a visible scrollbar */
-.rail {
-  scrollbar-width: none;
-}
-.rail::-webkit-scrollbar {
-  display: none;
-}
-
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
+@layer base {
+  /* Tailwind v4 resets buttons to the default cursor; every tappable thing should look tappable. */
+  button:not(:disabled),
+  [role="button"],
+  [role="tab"],
+  [role="radio"]:not([aria-disabled="true"]),
+  a[href],
+  label[for] {
+    cursor: pointer;
   }
-  to {
-    opacity: 1;
-    transform: none;
+  button:disabled {
+    cursor: not-allowed;
   }
-}
-.animate-rise {
-  animation: rise 0.35s ease-out both;
-}
-
-@keyframes pop {
-  0% {
-    transform: scale(0.4);
-    opacity: 0;
+  button,
+  a[href],
+  [role="tab"] {
+    transition:
+      background-color 150ms ease,
+      border-color 150ms ease,
+      color 150ms ease,
+      box-shadow 150ms ease,
+      transform 150ms ease,
+      opacity 150ms ease;
   }
-  70% {
-    transform: scale(1.12);
-    opacity: 1;
+  :focus-visible {
+    outline: 2px solid var(--color-basil);
+    outline-offset: 2px;
   }
-  100% {
-    transform: scale(1);
-  }
-}
-.animate-pop {
-  animation: pop 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-rise,
-  .animate-pop {
-    animation: none;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

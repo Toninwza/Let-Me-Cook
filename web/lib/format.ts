@@ -1,55 +1,21 @@
-export const baht = new Intl.NumberFormat("th-TH", {
-  style: "currency",
-  currency: "THB",
-  maximumFractionDigits: 2,
+const bahtFmt = new Intl.NumberFormat("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+const bahtFmt2 = new Intl.NumberFormat("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const dayFmt = new Intl.DateTimeFormat("th-TH", { weekday: "short", day: "numeric", month: "short" });
+const stampFmt = new Intl.DateTimeFormat("th-TH", {
+  day: "numeric",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Asia/Bangkok",
 });
 
-const thaiDay = new Intl.DateTimeFormat("th-TH", { weekday: "short", day: "numeric", month: "short" });
-const thaiTime = new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit" });
+export const baht = (n: number) => `฿${(Number.isInteger(n) ? bahtFmt : bahtFmt2).format(n)}`;
 
-/** "2026-10-17" (a Bangkok calendar date) -> "ส. 17 ต.ค." */
-export function formatDate(iso: string) {
+/** A YYYY-MM-DD date (already a Bangkok calendar date) as "ส. 17 ต.ค.". */
+export function shortDate(iso: string) {
   const [y, m, d] = iso.split("-").map(Number);
-  return thaiDay.format(new Date(y, m - 1, d));
+  return dayFmt.format(new Date(y, m - 1, d));
 }
 
-export function formatTime(iso: string) {
-  return thaiTime.format(new Date(iso));
-}
-
-/** Product images are not in the catalog yet, so cards show a tile per category. */
-export function categoryIcon(category: string) {
-  if (category.includes("เก้าอี้")) return "🪑";
-  if (category.includes("หูฟัง")) return "🎧";
-  if (category.includes("แท็บเล็ต")) return "📱";
-  if (category.includes("ไฟ") || category.includes("โคม")) return "💡";
-  if (category.includes("โต๊ะ")) return "🖥️";
-  if (category.includes("คีย์บอร์ด") || category.includes("เมาส์")) return "⌨️";
-  if (category.includes("กระเป๋า")) return "🎒";
-  if (category.includes("ครัว")) return "🍳";
-  if (category.includes("ออกกำลังกาย")) return "🏋️";
-  return "🛍️";
-}
-
-/** A one-event .ics file for the delivery day, so the user can add it to any calendar app. */
-export function deliveryIcs(title: string, isoDate: string, orderId: string) {
-  const day = isoDate.replaceAll("-", "");
-  const next = new Date(`${isoDate}T00:00:00`);
-  next.setDate(next.getDate() + 1);
-  const end = `${next.getFullYear()}${String(next.getMonth() + 1).padStart(2, "0")}${String(next.getDate()).padStart(2, "0")}`;
-  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
-  return [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//Let-Me-Cook//U-Pay//TH",
-    "BEGIN:VEVENT",
-    `UID:${orderId}@let-me-cook`,
-    `DTSTAMP:${stamp}`,
-    `DTSTART;VALUE=DATE:${day}`,
-    `DTEND;VALUE=DATE:${end}`,
-    `SUMMARY:รอรับ ${title}`,
-    `DESCRIPTION:คำสั่งซื้อ ${orderId} จาก Let-Me-Cook`,
-    "END:VEVENT",
-    "END:VCALENDAR",
-  ].join("\r\n");
-}
+/** A UTC timestamp shown in Bangkok time, e.g. "15 ต.ค. 22:41". */
+export const stamp = (iso: string) => stampFmt.format(new Date(iso.endsWith("Z") || iso.includes("+") ? iso : `${iso}Z`));
