@@ -1,6 +1,6 @@
 from collections.abc import Iterator
 
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session, SQLModel, create_engine, text
 
 from app.config import settings
 
@@ -25,6 +25,14 @@ def init_db() -> None:
     from app import models  # noqa: F401
 
     SQLModel.metadata.create_all(engine)
+
+    if engine.dialect.name == "postgresql":
+        # Supabase exposes public tables over its REST API. RLS with no policies
+        # blocks that path; this API connects as the table owner, which RLS
+        # doesn't apply to. Idempotent, so it runs on every start.
+        with engine.begin() as conn:
+            for table in SQLModel.metadata.sorted_tables:
+                conn.execute(text(f'ALTER TABLE "{table.name}" ENABLE ROW LEVEL SECURITY'))
 
 
 def get_session() -> Iterator[Session]:
