@@ -4,7 +4,7 @@ import logging
 from contextlib import aclosing
 from datetime import date, datetime
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
@@ -13,6 +13,7 @@ from app import catalog
 from app.ai import run_agent
 from app.db import engine
 from app.models import AppUser, ChatSession, Message
+from app.ratelimit import limit
 from app.schemas import HistoryMessage, UserProfile
 
 log = logging.getLogger(__name__)
@@ -140,7 +141,7 @@ async def _stream(session_id: str, text: str, profile: UserProfile, history: lis
     yield _sse({"type": "done"})
 
 
-@router.post("/sessions/{session_id}/messages")
+@router.post("/sessions/{session_id}/messages", dependencies=[Depends(limit("chat", 20))])
 async def post_message(session_id: str, body: MessageIn) -> StreamingResponse:
     text = body.text.strip()
     if not text:

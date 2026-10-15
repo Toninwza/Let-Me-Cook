@@ -137,7 +137,8 @@ pending_confirm / awaiting_payment / payment_failed --cancel--> cancelled
 
 The backend learns the payment result by asking Stripe whenever an `awaiting_payment` order is read
 (`GET /api/orders/{id}` or `GET /api/orders`). No webhook, so it works locally and deployed.
-When an order turns `paid`, `Product.stock` drops by `quantity`.
+When an order turns `paid`, `Product.stock` drops by `quantity` and the product is added to the front
+of the user's `purchase_history` (U-Tag keeps the newest 20), so the next search can use it.
 
 ## AI module interface (Python, `app.ai`)
 
@@ -208,7 +209,7 @@ data: <the event dict as JSON, including "type">
 | `agent_step` | `step_id`: str, `label`: str (Thai), `status`: `"running"` / `"done"` / `"error"`, `detail`: str or null | 3, must not break |
 | `message_delta` | `text`: str | bot text, appended in order |
 | `clarify` | `question`: str, `choices`: list[str] (0 to 4 quick replies) | 2 (vague request) |
-| `options` | `items`: list[ProductOption] (0 to 3), `reason`: str or null, `alternatives`: list[str] | 4, must not break |
+| `options` | `items`: list[ProductOption] (0 to 3, or up to 12 when the user asks to see everything), `reason`: str or null, `alternatives`: list[str] | 4, must not break |
 | `checkout_request` | `product_id`: str, `quantity`: int | user typed "เอาตัวแรก": web opens U-Pay |
 | `error` | `code`: `"agent_failed"` / `"timeout"` / `"bad_input"` / `"internal"`, `message`: str (Thai, shown to user) | any |
 | `done` | nothing | ends every stream |
@@ -222,6 +223,11 @@ Rules:
 2. `options` with 0 items **must** have `reason` (why nothing fits) and at least one entry in
    `alternatives` (Thai suggestions the user can tap, sent back as the next message).
 3. `options` with items: `reason` may be null; every item has its own `reason`.
+   Three modes, chosen by the agent from the message:
+   - default: the best 3 picks, reasons written by the model.
+   - see everything ("ขอดูหมด", "ทั้งหมด", "ทุกตัว"): up to 12 matches ranked by relevance, rating
+     and reviews; each reason is built from the product's real numbers (rating, price, delivery).
+   - more ("มีตัวอื่นไหม", "ขอดูเพิ่ม"): 3 new picks, never a product already shown in this chat.
 4. At most one `options`, one `clarify` and one `checkout_request` per turn.
 5. Exactly one `done`, always last. After `error` comes `done`.
 6. The agent never sends payment or order data. Checkout is REST (below), started by the user
@@ -230,6 +236,11 @@ Rules:
 ## HTTP endpoints
 
 All under `/api`. Errors use FastAPI's default `{ "detail": str }` with a 4xx/5xx code.
+
+Endpoints that cost money per call are rate limited per client IP (the first address in
+`X-Forwarded-For`, which the Next rewrite and Cloud Run set). Over the limit returns **429** with a
+Thai `detail` and a `Retry-After` header in seconds. Limits per IP: chat messages 20 per minute,
+`/voice/transcribe` 15 per minute, `/voice/speak` 30 per minute, `/orders/{id}/confirm` 10 per minute.
 
 ### [P0]
 

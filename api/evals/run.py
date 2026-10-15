@@ -50,18 +50,22 @@ def _contract_problems(events: list[dict]) -> list[str]:
             problems.append(f"more than one {kind}")
     for e in events:
         if e["type"] == "options":
-            if len(e["items"]) > 3:
-                problems.append("more than 3 options")
+            if len(e["items"]) > 12:
+                problems.append("more than 12 options")
             if not e["items"] and (not e.get("reason") or not e.get("alternatives")):
                 problems.append("empty options without reason/alternatives")
             if any(i["stock"] <= 0 for i in e["items"]):
                 problems.append("out-of-stock option")
             if any(not i.get("reason") for i in e["items"]):
                 problems.append("option without reason")
+    said = " ".join(e.get("text", "") or e.get("question", "") for e in events if e["type"] in ("message_delta", "clarify"))
+    said += " ".join(c for e in events if e["type"] == "clarify" for c in e.get("choices", []))
+    if "ค่ะ" in said or "คะ" in said.replace("คะแนน", ""):
+        problems.append("female particle ค่ะ/คะ in bot text (bot is male, says ครับ)")
     return problems
 
 
-def _check(expect: dict, events: list[dict], prev_options: list[str]) -> list[str]:
+def _check(expect: dict, events: list[dict], prev_options: list[str], prev_shown: list[str]) -> list[str]:
     kinds = {e["type"] for e in events}
     options = next((e for e in events if e["type"] == "options"), None)
     items = options["items"] if options else []
@@ -74,6 +78,8 @@ def _check(expect: dict, events: list[dict], prev_options: list[str]) -> list[st
         problems.append(f"expected options, got {sorted(kinds - {'agent_step', 'message_delta'})}")
     if want == "clarify" and "clarify" not in kinds:
         problems.append("expected clarify")
+    if want == "clarify_or_options" and "clarify" not in kinds and not items:
+        problems.append("expected clarify or product options")
     if want == "answer" and (options or checkout or "message_delta" not in kinds):
         problems.append("expected a text answer only")
     if want == "answer_or_clarify" and (options and items or checkout):
@@ -101,6 +107,8 @@ def _check(expect: dict, events: list[dict], prev_options: list[str]) -> list[st
             problems.append(f"excluded shown: {sorted(bad)}")
         if "max_price" in expect and (over := [i["product_id"] for i in items if i["price"] > expect["max_price"]]):
             problems.append(f"over budget: {over}")
+        if expect.get("no_repeat") and (again := set(ids) & set(prev_shown)):
+            problems.append(f"repeated products already shown: {sorted(again)}")
         if "deliver_within_days" in expect:
             limit = (catalog.today() + timedelta(days=expect["deliver_within_days"])).isoformat()
             if late := [i["product_id"] for i in items if i["delivery_date"] > limit]:
@@ -112,6 +120,7 @@ async def _run_case(case: dict, gate: asyncio.Semaphore) -> dict:
     async with gate:
         history: list[HistoryMessage] = []
         prev_options: list[str] = []
+        prev_shown: list[str] = []
         events: list[dict] = []
         started = 0.0
         try:
@@ -121,9 +130,10 @@ async def _run_case(case: dict, gate: asyncio.Semaphore) -> dict:
                 if i < len(case["turns"]) - 1:
                     bot = _bot_message(events)
                     prev_options = bot.option_ids or prev_options
+                    prev_shown += bot.option_ids
                     history += [HistoryMessage(role="user", text=text, created_at=datetime.now(UTC)), bot]
             seconds = time.perf_counter() - started
-            problems = _contract_problems(events) + _check(case["expect"], events, prev_options)
+            problems = _contract_problems(events) + _check(case["expect"], events, prev_options, prev_shown)
         except Exception as exc:
             seconds, problems = time.perf_counter() - started, [f"raised {type(exc).__name__}: {exc}"]
         steps = [e["step_id"] for e in events if e.get("type") == "agent_step" and e["status"] == "done"]

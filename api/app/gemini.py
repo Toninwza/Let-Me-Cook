@@ -25,7 +25,15 @@ def client() -> genai.Client:
         raise GeminiNotConfigured("GEMINI_API_KEY is not set in api/.env")
     loop = id(asyncio.get_running_loop())
     if loop not in _clients:
-        _clients[loop] = genai.Client(api_key=settings.gemini_api_key)
+        _clients[loop] = genai.Client(
+            api_key=settings.gemini_api_key,
+            # SDK default is 5 attempts with backoff up to 60 s: one overloaded moment (429/5xx) can
+            # stall a chat turn for minutes (seen in evals: 134 s on one call). Fail fast instead.
+            http_options=types.HttpOptions(
+                timeout=20_000,  # ms, per attempt
+                retry_options=types.HttpRetryOptions(attempts=3, initial_delay=0.5, max_delay=2.0),
+            ),
+        )
     return _clients[loop]
 
 

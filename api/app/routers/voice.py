@@ -1,10 +1,11 @@
 import logging
 
-from fastapi import APIRouter, HTTPException, Response, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile
 from pydantic import BaseModel, Field
 
 from app.ai import speak, transcribe
 from app.config import settings
+from app.ratelimit import limit
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/voice", tags=["voice"])
@@ -20,7 +21,7 @@ class SpeakIn(BaseModel):
     text: str = Field(min_length=1, max_length=600)
 
 
-@router.post("/transcribe")
+@router.post("/transcribe", dependencies=[Depends(limit("transcribe", 15))])
 async def transcribe_audio(file: UploadFile) -> TranscriptOut:
     if not settings.elevenlabs_api_key:
         raise HTTPException(503, "ระบบแปลงเสียงยังไม่ได้ตั้งค่า")
@@ -39,7 +40,7 @@ async def transcribe_audio(file: UploadFile) -> TranscriptOut:
     return TranscriptOut(text=text)
 
 
-@router.post("/speak", response_class=Response, responses={200: {"content": {"audio/mpeg": {}}}})
+@router.post("/speak", dependencies=[Depends(limit("speak", 30))], response_class=Response, responses={200: {"content": {"audio/mpeg": {}}}})
 async def speak_text(body: SpeakIn) -> Response:
     if not settings.elevenlabs_api_key:
         raise HTTPException(503, "ระบบเสียงยังไม่ได้ตั้งค่า")

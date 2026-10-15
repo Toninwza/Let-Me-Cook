@@ -1,90 +1,840 @@
 {
   "_note": "Sample data so the app runs end to end. Third teammate replaces it. promptpay_id values here are placeholders: set real ones in the DB only, never commit them (public repo).",
   "shops": [
-    { "id": "shop_ergohome", "name": "ErgoHome", "rating": 4.7, "ship_days": 2, "promptpay_id": "0000000000", "promptpay_name": "ErgoHome" },
-    { "id": "shop_deskmate", "name": "DeskMate", "rating": 4.4, "ship_days": 3, "promptpay_id": "0000000000", "promptpay_name": "DeskMate" },
-    { "id": "shop_soundlab", "name": "SoundLab", "rating": 4.6, "ship_days": 1, "promptpay_id": "0000000000", "promptpay_name": "SoundLab" },
-    { "id": "shop_gadgetbox", "name": "GadgetBox", "rating": 4.3, "ship_days": 3, "promptpay_id": "0000000000", "promptpay_name": "GadgetBox" }
+    {
+      "id": "shop_ergohome",
+      "name": "ErgoHome",
+      "rating": 4.7,
+      "ship_days": 2,
+      "promptpay_id": "0000000000",
+      "promptpay_name": "ErgoHome"
+    },
+    {
+      "id": "shop_deskmate",
+      "name": "DeskMate",
+      "rating": 4.4,
+      "ship_days": 3,
+      "promptpay_id": "0000000000",
+      "promptpay_name": "DeskMate"
+    },
+    {
+      "id": "shop_soundlab",
+      "name": "SoundLab",
+      "rating": 4.6,
+      "ship_days": 1,
+      "promptpay_id": "0000000000",
+      "promptpay_name": "SoundLab"
+    },
+    {
+      "id": "shop_gadgetbox",
+      "name": "GadgetBox",
+      "rating": 4.3,
+      "ship_days": 3,
+      "promptpay_id": "0000000000",
+      "promptpay_name": "GadgetBox"
+    },
+    {
+      "id": "shop_kitchenpro",
+      "name": "KitchenPro",
+      "rating": 4.6,
+      "ship_days": 2,
+      "promptpay_id": "0000000000",
+      "promptpay_name": "KitchenPro"
+    },
+    {
+      "id": "shop_fitlife",
+      "name": "FitLife",
+      "rating": 4.5,
+      "ship_days": 1,
+      "promptpay_id": "0000000000",
+      "promptpay_name": "FitLife"
+    },
+    {
+      "id": "shop_bagcraft",
+      "name": "BagCraft",
+      "rating": 4.4,
+      "ship_days": 3,
+      "promptpay_id": "0000000000",
+      "promptpay_name": "BagCraft"
+    }
   ],
   "products": [
     {
-      "id": "p_chair_ergo_01", "shop_id": "shop_ergohome",
+      "id": "p_chair_ergo_01",
+      "shop_id": "shop_ergohome",
       "title": "เก้าอี้ทำงาน Ergonomic รุ่น Flex Pro สีดำ",
       "description": "พนักพิงปรับรองรับหลังส่วนล่าง ที่วางแขน 3D ปรับสูงต่ำได้ รับน้ำหนัก 120 กก.",
-      "category": "เก้าอี้", "tags": ["ergonomic", "สีดำ", "work from home", "รองรับหลัง"],
-      "original_price": 3290, "discount_percent": 10, "stock": 12, "rating": 4.8, "review_count": 214, "image_url": null
+      "category": "เก้าอี้",
+      "tags": [
+        "ergonomic",
+        "สีดำ",
+        "work from home",
+        "รองรับหลัง"
+      ],
+      "original_price": 3290,
+      "discount_percent": 10,
+      "stock": 12,
+      "rating": 4.8,
+      "review_count": 214,
+      "image_url": null
     },
     {
-      "id": "p_chair_ergo_02", "shop_id": "shop_deskmate",
+      "id": "p_chair_ergo_02",
+      "shop_id": "shop_deskmate",
       "title": "เก้าอี้ ergonomic ตาข่าย Mesh Air สีดำ",
       "description": "พนักพิงตาข่ายระบายอากาศ ไม่ร้อนหลัง ปรับเอนได้ 120 องศา",
-      "category": "เก้าอี้", "tags": ["ergonomic", "สีดำ", "ตาข่าย", "minimal"],
-      "original_price": 2590, "discount_percent": 0, "stock": 5, "rating": 4.5, "review_count": 98, "image_url": null
+      "category": "เก้าอี้",
+      "tags": [
+        "ergonomic",
+        "สีดำ",
+        "ตาข่าย",
+        "minimal"
+      ],
+      "original_price": 2590,
+      "discount_percent": 0,
+      "stock": 5,
+      "rating": 4.5,
+      "review_count": 98,
+      "image_url": null
     },
     {
-      "id": "p_chair_ergo_03", "shop_id": "shop_ergohome",
+      "id": "p_chair_ergo_03",
+      "shop_id": "shop_ergohome",
       "title": "เก้าอี้สำนักงาน Basic Plus สีดำ",
       "description": "เก้าอี้สำนักงานรุ่นประหยัด เบาะหนา มีหมอนรองหลัง",
-      "category": "เก้าอี้", "tags": ["ergonomic", "สีดำ", "ประหยัด"],
-      "original_price": 1890, "discount_percent": 5, "stock": 30, "rating": 4.2, "review_count": 51, "image_url": null
+      "category": "เก้าอี้",
+      "tags": [
+        "ergonomic",
+        "สีดำ",
+        "ประหยัด"
+      ],
+      "original_price": 1890,
+      "discount_percent": 5,
+      "stock": 30,
+      "rating": 4.2,
+      "review_count": 51,
+      "image_url": null
     },
     {
-      "id": "p_chair_ergo_04", "shop_id": "shop_deskmate",
+      "id": "p_chair_ergo_04",
+      "shop_id": "shop_deskmate",
       "title": "เก้าอี้เกมมิ่ง Racer X สีดำแดง",
       "description": "เก้าอี้เกมมิ่ง เอนนอนได้ 160 องศา มีหมอนรองคอ",
-      "category": "เก้าอี้", "tags": ["gaming", "สีดำ", "ergonomic"],
-      "original_price": 3490, "discount_percent": 0, "stock": 4, "rating": 4.3, "review_count": 77, "image_url": null
+      "category": "เก้าอี้",
+      "tags": [
+        "gaming",
+        "สีดำ",
+        "ergonomic"
+      ],
+      "original_price": 3490,
+      "discount_percent": 0,
+      "stock": 4,
+      "rating": 4.3,
+      "review_count": 77,
+      "image_url": null
     },
     {
-      "id": "p_chair_ergo_05", "shop_id": "shop_ergohome",
+      "id": "p_chair_ergo_05",
+      "shop_id": "shop_ergohome",
       "title": "เก้าอี้ ergonomic Minimal สีขาว",
       "description": "ดีไซน์มินิมอล โครงอะลูมิเนียม",
-      "category": "เก้าอี้", "tags": ["ergonomic", "สีขาว", "minimal"],
-      "original_price": 2790, "discount_percent": 0, "stock": 0, "rating": 4.6, "review_count": 40, "image_url": null
+      "category": "เก้าอี้",
+      "tags": [
+        "ergonomic",
+        "สีขาว",
+        "minimal"
+      ],
+      "original_price": 2790,
+      "discount_percent": 0,
+      "stock": 0,
+      "rating": 4.6,
+      "review_count": 40,
+      "image_url": null
     },
     {
-      "id": "p_headphone_01", "shop_id": "shop_soundlab",
+      "id": "p_headphone_01",
+      "shop_id": "shop_soundlab",
       "title": "หูฟังบลูทูธตัดเสียงรบกวน Quiet 7",
       "description": "ANC ตัดเสียงรบกวน แบตใช้ได้ 30 ชั่วโมง ไมค์คู่สำหรับประชุม",
-      "category": "หูฟัง", "tags": ["หูฟัง", "bluetooth", "ตัดเสียงรบกวน", "ประชุม"],
-      "original_price": 2490, "discount_percent": 0, "stock": 20, "rating": 4.6, "review_count": 320, "image_url": null
+      "category": "หูฟัง",
+      "tags": [
+        "หูฟัง",
+        "bluetooth",
+        "ตัดเสียงรบกวน",
+        "ประชุม"
+      ],
+      "original_price": 2490,
+      "discount_percent": 0,
+      "stock": 20,
+      "rating": 4.6,
+      "review_count": 320,
+      "image_url": null
     },
     {
-      "id": "p_headphone_02", "shop_id": "shop_soundlab",
+      "id": "p_headphone_02",
+      "shop_id": "shop_soundlab",
       "title": "หูฟังออกกำลังกาย SportBuds กันเหงื่อ",
       "description": "หูฟังไร้สาย กันน้ำ IPX5 ใส่วิ่งไม่หลุด แบต 8 ชั่วโมง",
-      "category": "หูฟัง", "tags": ["หูฟัง", "ออกกำลังกาย", "กันน้ำ", "bluetooth"],
-      "original_price": 990, "discount_percent": 0, "stock": 40, "rating": 4.4, "review_count": 150, "image_url": null
+      "category": "หูฟัง",
+      "tags": [
+        "หูฟัง",
+        "ออกกำลังกาย",
+        "กันน้ำ",
+        "bluetooth"
+      ],
+      "original_price": 990,
+      "discount_percent": 0,
+      "stock": 40,
+      "rating": 4.4,
+      "review_count": 150,
+      "image_url": null
     },
     {
-      "id": "p_headphone_03", "shop_id": "shop_deskmate",
+      "id": "p_headphone_03",
+      "shop_id": "shop_deskmate",
       "title": "หูฟังครอบหู USB สำหรับประชุม CallPro",
       "description": "ไมค์ตัดเสียงรอบข้าง เสียบ USB ใช้ได้ทันที",
-      "category": "หูฟัง", "tags": ["หูฟัง", "ประชุม", "usb"],
-      "original_price": 1290, "discount_percent": 10, "stock": 15, "rating": 4.1, "review_count": 64, "image_url": null
+      "category": "หูฟัง",
+      "tags": [
+        "หูฟัง",
+        "ประชุม",
+        "usb"
+      ],
+      "original_price": 1290,
+      "discount_percent": 10,
+      "stock": 15,
+      "rating": 4.1,
+      "review_count": 64,
+      "image_url": null
     },
     {
-      "id": "p_tablet_01", "shop_id": "shop_gadgetbox",
+      "id": "p_tablet_01",
+      "shop_id": "shop_gadgetbox",
       "title": "แท็บเล็ต 10 นิ้ว Tab Lite",
       "description": "จอ 10.1 นิ้ว RAM 4GB รองรับปากกา",
-      "category": "แท็บเล็ต", "tags": ["แท็บเล็ต", "tablet"],
-      "original_price": 4590, "discount_percent": 0, "stock": 8, "rating": 4.2, "review_count": 33, "image_url": null
+      "category": "แท็บเล็ต",
+      "tags": [
+        "แท็บเล็ต",
+        "tablet"
+      ],
+      "original_price": 4590,
+      "discount_percent": 0,
+      "stock": 8,
+      "rating": 4.2,
+      "review_count": 33,
+      "image_url": null
     },
     {
-      "id": "p_tablet_02", "shop_id": "shop_gadgetbox",
+      "id": "p_tablet_02",
+      "shop_id": "shop_gadgetbox",
       "title": "iPad 9 มือสอง สภาพ 90%",
       "description": "iPad รุ่นที่ 9 64GB แบต 88% รับประกันร้าน 3 เดือน",
-      "category": "แท็บเล็ต", "tags": ["ipad", "แท็บเล็ต", "มือสอง", "tablet"],
-      "original_price": 7900, "discount_percent": 0, "stock": 2, "rating": 4.5, "review_count": 12, "image_url": null
+      "category": "แท็บเล็ต",
+      "tags": [
+        "ipad",
+        "แท็บเล็ต",
+        "มือสอง",
+        "tablet"
+      ],
+      "original_price": 7900,
+      "discount_percent": 0,
+      "stock": 2,
+      "rating": 4.5,
+      "review_count": 12,
+      "image_url": null
+    },
+    {
+      "id": "p_chair_stool_06",
+      "shop_id": "shop_deskmate",
+      "title": "เก้าอี้สตูลทรงสูง ไม้โอ๊ค",
+      "description": "สตูลสำหรับเคาน์เตอร์หรือโต๊ะยืน ที่วางเท้าเหล็ก รับน้ำหนัก 100 กก.",
+      "category": "เก้าอี้",
+      "tags": [
+        "สตูล",
+        "ไม้",
+        "มินิมอล",
+        "โต๊ะยืน"
+      ],
+      "original_price": 1290,
+      "discount_percent": 0,
+      "stock": 18,
+      "rating": 4.3,
+      "review_count": 42,
+      "image_url": null
+    },
+    {
+      "id": "p_chair_kneel_07",
+      "shop_id": "shop_ergohome",
+      "title": "เก้าอี้คุกเข่า Kneeling Chair ปรับท่านั่ง",
+      "description": "ช่วยให้หลังตรงเอง ลดแรงกดที่หลังส่วนล่าง เหมาะกับคนนั่งทำงานนาน",
+      "category": "เก้าอี้",
+      "tags": [
+        "ergonomic",
+        "ท่านั่ง",
+        "สุขภาพ"
+      ],
+      "original_price": 2190,
+      "discount_percent": 15,
+      "stock": 7,
+      "rating": 4.4,
+      "review_count": 63,
+      "image_url": null
+    },
+    {
+      "id": "p_headphone_04",
+      "shop_id": "shop_soundlab",
+      "title": "หูฟังไร้สาย True Wireless AirLite สีขาว",
+      "description": "เบา 4 กรัมต่อข้าง แบตรวม 30 ชั่วโมง กันน้ำ IPX4",
+      "category": "หูฟัง",
+      "tags": [
+        "หูฟัง",
+        "bluetooth",
+        "true wireless",
+        "สีขาว"
+      ],
+      "original_price": 1490,
+      "discount_percent": 20,
+      "stock": 25,
+      "rating": 4.3,
+      "review_count": 410,
+      "image_url": null
+    },
+    {
+      "id": "p_headphone_05",
+      "shop_id": "shop_soundlab",
+      "title": "หูฟังครอบหูสำหรับเด็ก จำกัดเสียง 85 dB",
+      "description": "ปลอดภัยต่อหูเด็ก วัสดุนุ่ม พับเก็บได้ มีไมค์สำหรับเรียนออนไลน์",
+      "category": "หูฟัง",
+      "tags": [
+        "หูฟัง",
+        "เด็ก",
+        "เรียนออนไลน์",
+        "ไมค์"
+      ],
+      "original_price": 790,
+      "discount_percent": 0,
+      "stock": 30,
+      "rating": 4.6,
+      "review_count": 88,
+      "image_url": null
+    },
+    {
+      "id": "p_tablet_03",
+      "shop_id": "shop_gadgetbox",
+      "title": "แท็บเล็ต 11 นิ้ว Tab Pro พร้อมปากกา",
+      "description": "จอ 120Hz รองรับปากกาแรงกดสูง เหมาะจดเลกเชอร์และวาดรูป แรม 8GB",
+      "category": "แท็บเล็ต",
+      "tags": [
+        "แท็บเล็ต",
+        "tablet",
+        "ปากกา",
+        "จดโน้ต",
+        "วาดรูป"
+      ],
+      "original_price": 8990,
+      "discount_percent": 10,
+      "stock": 6,
+      "rating": 4.7,
+      "review_count": 156,
+      "image_url": null
+    },
+    {
+      "id": "p_tablet_04",
+      "shop_id": "shop_gadgetbox",
+      "title": "ปากกาสไตลัสสำหรับแท็บเล็ต วางมือบนจอได้",
+      "description": "palm rejection ชาร์จ USB-C ใช้ได้กับแท็บเล็ตส่วนใหญ่",
+      "category": "แท็บเล็ต",
+      "tags": [
+        "ปากกา",
+        "stylus",
+        "จดโน้ต"
+      ],
+      "original_price": 690,
+      "discount_percent": 0,
+      "stock": 40,
+      "rating": 4.2,
+      "review_count": 230,
+      "image_url": null
+    },
+    {
+      "id": "p_desk_01",
+      "shop_id": "shop_deskmate",
+      "title": "โต๊ะปรับระดับไฟฟ้า Standing Desk 140 ซม.",
+      "description": "มอเตอร์คู่ ปรับสูง 72 ถึง 118 ซม. จำความสูงได้ 3 ระดับ สลับนั่งและยืนทำงานได้",
+      "category": "โต๊ะทำงาน",
+      "tags": [
+        "โต๊ะ",
+        "standing desk",
+        "ยืนทำงาน",
+        "work from home"
+      ],
+      "original_price": 8900,
+      "discount_percent": 12,
+      "stock": 5,
+      "rating": 4.8,
+      "review_count": 97,
+      "image_url": null
+    },
+    {
+      "id": "p_desk_02",
+      "shop_id": "shop_deskmate",
+      "title": "โต๊ะทำงานไม้มินิมอล 100 ซม. สีขาว",
+      "description": "ท็อปไม้สีขาวผิวด้าน ขาเหล็ก ประกอบง่ายใน 15 นาที",
+      "category": "โต๊ะทำงาน",
+      "tags": [
+        "โต๊ะ",
+        "มินิมอล",
+        "สีขาว",
+        "work from home"
+      ],
+      "original_price": 2490,
+      "discount_percent": 0,
+      "stock": 14,
+      "rating": 4.5,
+      "review_count": 128,
+      "image_url": null
+    },
+    {
+      "id": "p_desk_03",
+      "shop_id": "shop_deskmate",
+      "title": "ชั้นวางจอคอมไม้ พร้อมลิ้นชัก",
+      "description": "ยกจอให้อยู่ระดับสายตา มีลิ้นชักเก็บของใต้ชั้น",
+      "category": "โต๊ะทำงาน",
+      "tags": [
+        "ชั้นวางจอ",
+        "จัดโต๊ะ",
+        "มินิมอล"
+      ],
+      "original_price": 590,
+      "discount_percent": 0,
+      "stock": 50,
+      "rating": 4.4,
+      "review_count": 302,
+      "image_url": null
+    },
+    {
+      "id": "p_desk_04",
+      "shop_id": "shop_ergohome",
+      "title": "ที่วางโน้ตบุ๊คอะลูมิเนียม ปรับได้ 6 ระดับ",
+      "description": "ยกจอโน้ตบุ๊คให้สูงขึ้น ช่วยระบายความร้อน พับพกพาได้",
+      "category": "โต๊ะทำงาน",
+      "tags": [
+        "ที่วางโน้ตบุ๊ค",
+        "laptop stand",
+        "พกพา"
+      ],
+      "original_price": 790,
+      "discount_percent": 10,
+      "stock": 35,
+      "rating": 4.6,
+      "review_count": 512,
+      "image_url": null
+    },
+    {
+      "id": "p_lamp_01",
+      "shop_id": "shop_deskmate",
+      "title": "โคมไฟตั้งโต๊ะ LED ปรับแสง 3 โหมด",
+      "description": "แสงไม่กระพริบ ปรับอุณหภูมิสีได้ มีพอร์ต USB ชาร์จมือถือ",
+      "category": "โคมไฟ",
+      "tags": [
+        "โคมไฟ",
+        "LED",
+        "อ่านหนังสือ"
+      ],
+      "original_price": 690,
+      "discount_percent": 0,
+      "stock": 22,
+      "rating": 4.5,
+      "review_count": 187,
+      "image_url": null
+    },
+    {
+      "id": "p_lamp_02",
+      "shop_id": "shop_deskmate",
+      "title": "ไฟแขวนจอคอมพิวเตอร์ Screen Bar",
+      "description": "ส่องแสงลงบนโต๊ะอย่างเดียว ไม่สะท้อนเข้าจอ ประหยัดพื้นที่",
+      "category": "โคมไฟ",
+      "tags": [
+        "โคมไฟ",
+        "screen bar",
+        "จัดโต๊ะ"
+      ],
+      "original_price": 1290,
+      "discount_percent": 15,
+      "stock": 12,
+      "rating": 4.7,
+      "review_count": 145,
+      "image_url": null
+    },
+    {
+      "id": "p_lamp_03",
+      "shop_id": "shop_gadgetbox",
+      "title": "ไฟเส้น RGB ติดหลังจอ ปรับสีผ่านแอป",
+      "description": "ตกแต่งโต๊ะเกมมิ่ง ซิงก์สีกับเพลงได้ ยาว 2 เมตร",
+      "category": "โคมไฟ",
+      "tags": [
+        "ไฟ",
+        "RGB",
+        "gaming",
+        "ตกแต่ง"
+      ],
+      "original_price": 390,
+      "discount_percent": 0,
+      "stock": 60,
+      "rating": 4.1,
+      "review_count": 276,
+      "image_url": null
+    },
+    {
+      "id": "p_input_01",
+      "shop_id": "shop_gadgetbox",
+      "title": "เมาส์ Vertical Ergonomic ไร้สาย",
+      "description": "จับในท่าเหมือนจับมือคน ข้อมือไม่ต้องบิดตลอดเวลา",
+      "category": "คีย์บอร์ดและเมาส์",
+      "tags": [
+        "เมาส์",
+        "ergonomic",
+        "ไร้สาย"
+      ],
+      "original_price": 890,
+      "discount_percent": 10,
+      "stock": 28,
+      "rating": 4.5,
+      "review_count": 233,
+      "image_url": null
+    },
+    {
+      "id": "p_input_02",
+      "shop_id": "shop_gadgetbox",
+      "title": "คีย์บอร์ดไร้สาย Low Profile เสียงเงียบ",
+      "description": "ปุ่มเตี้ย พิมพ์เบา เชื่อมต่อได้ 3 อุปกรณ์",
+      "category": "คีย์บอร์ดและเมาส์",
+      "tags": [
+        "คีย์บอร์ด",
+        "ไร้สาย",
+        "เสียงเงียบ",
+        "มินิมอล"
+      ],
+      "original_price": 1590,
+      "discount_percent": 0,
+      "stock": 20,
+      "rating": 4.4,
+      "review_count": 167,
+      "image_url": null
+    },
+    {
+      "id": "p_input_03",
+      "shop_id": "shop_gadgetbox",
+      "title": "แผ่นรองข้อมือเมมโมรี่โฟม สำหรับคีย์บอร์ด",
+      "description": "รองรับข้อมือขณะพิมพ์ ผิวผ้ากันลื่น",
+      "category": "คีย์บอร์ดและเมาส์",
+      "tags": [
+        "ที่รองข้อมือ",
+        "คีย์บอร์ด",
+        "เมมโมรี่โฟม"
+      ],
+      "original_price": 290,
+      "discount_percent": 0,
+      "stock": 80,
+      "rating": 4.3,
+      "review_count": 421,
+      "image_url": null
+    },
+    {
+      "id": "p_input_04",
+      "shop_id": "shop_gadgetbox",
+      "title": "คีย์บอร์ดเกมมิ่ง Mechanical Blue Switch",
+      "description": "ไฟ RGB ปุ่มทนทาน 50 ล้านครั้ง เสียงคลิกชัด",
+      "category": "คีย์บอร์ดและเมาส์",
+      "tags": [
+        "คีย์บอร์ด",
+        "gaming",
+        "mechanical",
+        "RGB"
+      ],
+      "original_price": 1990,
+      "discount_percent": 20,
+      "stock": 9,
+      "rating": 4.6,
+      "review_count": 198,
+      "image_url": null
+    },
+    {
+      "id": "p_bag_01",
+      "shop_id": "shop_bagcraft",
+      "title": "กระเป๋าเป้โน้ตบุ๊ค 15.6 นิ้ว กันน้ำ",
+      "description": "ช่องใส่โน้ตบุ๊คบุนวม ผ้ากันน้ำ มีช่อง USB สำหรับชาร์จ",
+      "category": "กระเป๋า",
+      "tags": [
+        "กระเป๋า",
+        "เป้",
+        "โน้ตบุ๊ค",
+        "กันน้ำ"
+      ],
+      "original_price": 1190,
+      "discount_percent": 15,
+      "stock": 24,
+      "rating": 4.5,
+      "review_count": 342,
+      "image_url": null
+    },
+    {
+      "id": "p_bag_02",
+      "shop_id": "shop_bagcraft",
+      "title": "กระเป๋าสะพายข้าง Sling Bag ผ้าแคนวาส",
+      "description": "ใบเล็กพกง่าย ใส่มือถือ กระเป๋าสตางค์ และแท็บเล็ต 8 นิ้ว",
+      "category": "กระเป๋า",
+      "tags": [
+        "กระเป๋า",
+        "sling bag",
+        "มินิมอล"
+      ],
+      "original_price": 590,
+      "discount_percent": 0,
+      "stock": 40,
+      "rating": 4.3,
+      "review_count": 119,
+      "image_url": null
+    },
+    {
+      "id": "p_bag_03",
+      "shop_id": "shop_bagcraft",
+      "title": "ซองใส่แท็บเล็ต 11 นิ้ว กันกระแทก",
+      "description": "บุฟองน้ำหนา มีช่องเก็บปากกาและสายชาร์จ",
+      "category": "กระเป๋า",
+      "tags": [
+        "ซอง",
+        "แท็บเล็ต",
+        "กันกระแทก"
+      ],
+      "original_price": 450,
+      "discount_percent": 0,
+      "stock": 33,
+      "rating": 4.4,
+      "review_count": 87,
+      "image_url": null
+    },
+    {
+      "id": "p_bag_04",
+      "shop_id": "shop_bagcraft",
+      "title": "กระเป๋าเดินทางล้อลาก 20 นิ้ว ขึ้นเครื่องได้",
+      "description": "ล้อหมุน 360 องศา ซิปขยายได้ น้ำหนักเบา 2.6 กก.",
+      "category": "กระเป๋า",
+      "tags": [
+        "กระเป๋าเดินทาง",
+        "ล้อลาก",
+        "ขึ้นเครื่อง"
+      ],
+      "original_price": 2690,
+      "discount_percent": 25,
+      "stock": 8,
+      "rating": 4.6,
+      "review_count": 205,
+      "image_url": null
+    },
+    {
+      "id": "p_kitchen_01",
+      "shop_id": "shop_kitchenpro",
+      "title": "หม้อทอดไร้น้ำมัน 5.5 ลิตร จอดิจิทัล",
+      "description": "8 เมนูอัตโนมัติ ถาดเคลือบทำความสะอาดง่าย",
+      "category": "ของใช้ในครัว",
+      "tags": [
+        "หม้อทอดไร้น้ำมัน",
+        "air fryer",
+        "ทำอาหาร"
+      ],
+      "original_price": 2290,
+      "discount_percent": 20,
+      "stock": 15,
+      "rating": 4.7,
+      "review_count": 689,
+      "image_url": null
+    },
+    {
+      "id": "p_kitchen_02",
+      "shop_id": "shop_kitchenpro",
+      "title": "เครื่องชงกาแฟแคปซูล ขนาดกะทัดรัด",
+      "description": "แรงดัน 19 บาร์ ชงเอสเพรสโซ่ใน 30 วินาที ถังน้ำ 0.8 ลิตร",
+      "category": "ของใช้ในครัว",
+      "tags": [
+        "กาแฟ",
+        "เครื่องชงกาแฟ",
+        "espresso"
+      ],
+      "original_price": 3490,
+      "discount_percent": 10,
+      "stock": 10,
+      "rating": 4.6,
+      "review_count": 254,
+      "image_url": null
+    },
+    {
+      "id": "p_kitchen_03",
+      "shop_id": "shop_kitchenpro",
+      "title": "ชุดมีดทำครัวสแตนเลส 6 ชิ้น พร้อมแท่นเสียบ",
+      "description": "เหล็กกล้าไร้สนิม ด้ามจับกันลื่น",
+      "category": "ของใช้ในครัว",
+      "tags": [
+        "มีด",
+        "ทำอาหาร",
+        "ครัว"
+      ],
+      "original_price": 1590,
+      "discount_percent": 0,
+      "stock": 20,
+      "rating": 4.5,
+      "review_count": 98,
+      "image_url": null
+    },
+    {
+      "id": "p_kitchen_04",
+      "shop_id": "shop_kitchenpro",
+      "title": "แก้วเก็บความเย็น 600 มล. สแตนเลส",
+      "description": "เก็บเย็น 24 ชั่วโมง เก็บร้อน 12 ชั่วโมง ฝาสไลด์กันหก",
+      "category": "ของใช้ในครัว",
+      "tags": [
+        "แก้ว",
+        "เก็บความเย็น",
+        "กาแฟ"
+      ],
+      "original_price": 390,
+      "discount_percent": 0,
+      "stock": 70,
+      "rating": 4.4,
+      "review_count": 815,
+      "image_url": null
+    },
+    {
+      "id": "p_kitchen_05",
+      "shop_id": "shop_kitchenpro",
+      "title": "กาต้มน้ำคอห่าน ดริปกาแฟ ควบคุมอุณหภูมิ",
+      "description": "ตั้งอุณหภูมิได้ทีละองศา ปากเรียวรินน้ำได้แม่นยำ",
+      "category": "ของใช้ในครัว",
+      "tags": [
+        "กาแฟ",
+        "ดริป",
+        "กาต้มน้ำ"
+      ],
+      "original_price": 1890,
+      "discount_percent": 0,
+      "stock": 0,
+      "rating": 4.8,
+      "review_count": 176,
+      "image_url": null
+    },
+    {
+      "id": "p_fit_01",
+      "shop_id": "shop_fitlife",
+      "title": "เสื่อโยคะ TPE หนา 8 มม. กันลื่น",
+      "description": "นุ่ม รองรับข้อเข่า มีเส้นจัดท่า พร้อมสายรัด",
+      "category": "อุปกรณ์ออกกำลังกาย",
+      "tags": [
+        "โยคะ",
+        "เสื่อ",
+        "กันลื่น"
+      ],
+      "original_price": 690,
+      "discount_percent": 10,
+      "stock": 45,
+      "rating": 4.6,
+      "review_count": 532,
+      "image_url": null
+    },
+    {
+      "id": "p_fit_02",
+      "shop_id": "shop_fitlife",
+      "title": "ดัมเบลปรับน้ำหนัก 2 ถึง 20 กก. (คู่)",
+      "description": "หมุนปรับน้ำหนักได้ 10 ระดับ ประหยัดพื้นที่",
+      "category": "อุปกรณ์ออกกำลังกาย",
+      "tags": [
+        "ดัมเบล",
+        "เวทเทรนนิ่ง"
+      ],
+      "original_price": 4590,
+      "discount_percent": 15,
+      "stock": 6,
+      "rating": 4.7,
+      "review_count": 143,
+      "image_url": null
+    },
+    {
+      "id": "p_fit_03",
+      "shop_id": "shop_fitlife",
+      "title": "รองเท้าวิ่ง Road Runner น้ำหนักเบา",
+      "description": "พื้นโฟมคืนแรงสูง ระบายอากาศดี เหมาะวิ่งถนนระยะ 5 ถึง 21 กม.",
+      "category": "อุปกรณ์ออกกำลังกาย",
+      "tags": [
+        "รองเท้าวิ่ง",
+        "วิ่ง",
+        "running"
+      ],
+      "original_price": 2890,
+      "discount_percent": 20,
+      "stock": 18,
+      "rating": 4.5,
+      "review_count": 267,
+      "image_url": null
+    },
+    {
+      "id": "p_fit_04",
+      "shop_id": "shop_fitlife",
+      "title": "สมาร์ทวอทช์ฟิตเนส วัดชีพจรและการนอน",
+      "description": "GPS ในตัว กันน้ำ 5ATM แบต 10 วัน แจ้งเตือนจากมือถือ",
+      "category": "อุปกรณ์ออกกำลังกาย",
+      "tags": [
+        "สมาร์ทวอทช์",
+        "GPS",
+        "ชีพจร"
+      ],
+      "original_price": 3290,
+      "discount_percent": 10,
+      "stock": 12,
+      "rating": 4.4,
+      "review_count": 388,
+      "image_url": null
+    },
+    {
+      "id": "p_fit_05",
+      "shop_id": "shop_fitlife",
+      "title": "ยางยืดออกกำลังกาย 5 ระดับ พร้อมถุงผ้า",
+      "description": "ฝึกกล้ามเนื้อได้ทั้งตัว พกไปได้ทุกที่ เหมาะผู้เริ่มต้น",
+      "category": "อุปกรณ์ออกกำลังกาย",
+      "tags": [
+        "ยางยืด",
+        "ผู้เริ่มต้น",
+        "พกพา"
+      ],
+      "original_price": 350,
+      "discount_percent": 0,
+      "stock": 90,
+      "rating": 4.3,
+      "review_count": 611,
+      "image_url": null
     }
   ],
   "users": [
     {
-      "id": "u_demo", "display_name": "คุณมิ้นท์",
-      "address": { "line": "99/1 ซอยสุขุมวิท 101", "district": "บางนา", "province": "กรุงเทพมหานคร", "postcode": "10260" },
-      "interests": ["work from home", "minimal", "กาแฟ"],
+      "id": "u_demo",
+      "display_name": "คุณมิ้นท์",
+      "address": {
+        "line": "99/1 ซอยสุขุมวิท 101",
+        "district": "บางนา",
+        "province": "กรุงเทพมหานคร",
+        "postcode": "10260"
+      },
+      "interests": [
+        "work from home",
+        "minimal",
+        "กาแฟ"
+      ],
       "purchase_history": [
-        { "product_id": "p_ext_lamp", "title": "โคมไฟตั้งโต๊ะ LED", "category": "ไฟ", "price": 590, "purchased_at": "2026-09-20T10:00:00Z" }
+        {
+          "product_id": "p_ext_lamp",
+          "title": "โคมไฟตั้งโต๊ะ LED",
+          "category": "ไฟ",
+          "price": 590,
+          "purchased_at": "2026-09-20T10:00:00Z"
+        }
       ],
       "discount_percent": 5
     }

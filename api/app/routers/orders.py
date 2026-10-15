@@ -6,7 +6,7 @@ import secrets
 from typing import Literal
 
 import stripe
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import update
 from sqlmodel import Session, col, select
@@ -14,6 +14,7 @@ from sqlmodel import Session, col, select
 from app import catalog, payments
 from app.db import engine
 from app.models import AppUser, Order, Product, Shop, utcnow
+from app.ratelimit import limit
 from app.schemas import Order as OrderOut
 from app.schemas import ShopInfo
 
@@ -21,6 +22,7 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix="/orders", tags=["orders"])
 
 MIN_TOTAL_THB = 10.0  # Stripe's minimum charge for THB
+PURCHASE_HISTORY_KEEP = 20
 CANCELLABLE = {"pending_confirm", "awaiting_payment", "payment_failed"}
 NEXT_STATUS = {"shipped": "paid", "delivered": "shipped"}  # target -> required current status
 
@@ -109,6 +111,18 @@ def _mark_paid(order_id: str) -> None:
             product = session.get(Product, order.product_id)
             product.stock = max(0, product.stock - order.quantity)
             session.add(product)
+            # U-Tag learns: the agent reads purchase_history on the next search.
+            user = session.get(AppUser, order.user_id)
+            bought = {
+                "product_id": product.id,
+                "title": order.title,
+                "category": product.category,
+                "price": order.unit_price,
+                "purchased_at": utcnow().isoformat(),
+            }
+            # A new list (not .insert) so SQLAlchemy sees the JSON column changed.
+            user.purchase_history = [bought, *user.purchase_history][:PURCHASE_HISTORY_KEEP]
+            session.add(user)
         session.commit()
 
 
@@ -190,7 +204,7 @@ async def create_order(body: OrderIn) -> OrderOut:
     return await asyncio.to_thread(insert)
 
 
-@router.post("/{order_id}/confirm")
+@router.post("/{order_id}/confirm", dependencies=[Depends(limit("confirm", 10))])
 async def confirm_order(order_id: str) -> OrderOut:
     order = await asyncio.to_thread(_get, order_id)
     if order.status not in ("pending_confirm", "payment_failed"):

@@ -26,6 +26,8 @@ _WEEKDAYS = ["จันทร์", "อังคาร", "พุธ", "พฤห
 _HISTORY_TURNS = 12
 _CANDIDATES = 10
 _MAX_OPTIONS = 3
+_MAX_ALL = 12  # "ขอดูทั้งหมด": more cards, reasons built from real numbers instead of the model
+_ALL_CANDIDATES = 60
 
 
 # ---------- what Gemini returns ----------
@@ -47,6 +49,12 @@ class Plan(LLMOutput):
     min_price: float | None = None
     max_price: float | None = Field(default=None, description="Budget per unit in baht")
     deliver_by: str | None = Field(default=None, description="YYYY-MM-DD latest delivery date, or null")
+    scope: Literal["best", "all", "more"] = Field(
+        default="best",
+        description="For search. all: the user wants to see everything / every option ('ขอดูหมด', "
+        "'ทั้งหมด', 'ทุกตัว', 'มีอะไรบ้าง'). more: other options than those already shown "
+        "('มีตัวอื่นไหม', 'ขอดูเพิ่ม'). best: anything else.",
+    )
     product_id: str | None = Field(default=None, description="For checkout: id from the products shown last turn")
     quantity: int = 1
     question: str | None = Field(default=None, description="For clarify: one short Thai question")
@@ -93,8 +101,10 @@ message with the chat so far and decide one action. Reply in JSON only.
 - Prefer "search" whenever the product type is clear, even without a budget.
 - Use "clarify" only when the product type is missing or so broad that results would be random
   (e.g. "อยากได้หูฟังใหม่" with no use case). Never clarify twice in a row; search instead.
+- A described problem is a clear request: "ปวดคอเวลาดูจอโน้ตบุ๊ค", "ปวดข้อมือ", "แสงจอแยงตา" ->
+  "search" for products that solve it (keywords for those product types), never "clarify".
 - "เอาตัวแรก", "เอาอันที่สอง", "สั่งเลย" -> "checkout" with the matching product_id from the
-  products shown last turn (numbered 1, 2, 3). Quantity from the message, default 1.
+  products shown last turn (numbered 1, 2, 3 and so on). Quantity from the message, default 1.
 - Comparing or asking about products already shown -> "answer", using their data.
 - Resolve relative dates ("พรุ่งนี้", "วันอาทิตย์", "ภายในสัปดาห์นี้") from today's date.
 - "งบ 3000" means max_price 3000. Prices are in baht.
@@ -103,6 +113,12 @@ message with the chat so far and decide one action. Reply in JSON only.
   -> ["ipad", "แท็บเล็ต", "tablet", "pro"]; "เก้าอี้ทำงาน ergonomic" -> ["เก้าอี้", "ergonomic"].
   Never a whole sentence. Color or style words go in keywords too.
 - Set category only when it is clearly one of the given categories.
+- "ขอดูหมด", "ดูทั้งหมด", "ทุกตัว" -> "search" with scope "all". With no product type named (e.g.
+  after "มีอะไรให้ซื้อบ้าง"), leave keywords empty to list everything. "มีตัวอื่นไหม", "ขอดูเพิ่ม"
+  -> "search" with scope "more" and the same keywords as the last search.
+- "มีอะไรให้ซื้อบ้าง" alone -> "clarify", with the categories we sell as choices (at most 4).
+- Every Thai text you write (question, choices, reply) is a polite male voice: end with "ครับ",
+  never "ค่ะ" or "คะ".
 """
 
 _RANK_SYSTEM = """You pick products for a Thai shopping chat bot. You get the user's request, their
@@ -110,6 +126,8 @@ profile (U-Tag) and candidate products that already passed stock, budget and del
 Reply in JSON only.
 
 - Pick at most 3 candidates that truly fit the request, best first. Fewer is fine. Never invent ids.
+- When the user names a product type, only that type fits. An accessory or a different product
+  (a stylus for "iPad", a case for "laptop") is not a pick; mention it in alternatives instead.
 - Each reason is Thai, 1 or 2 short sentences, concrete: rating and review count, price after
   discount, delivery day, or a match with the user's interests. No generic praise.
 - If nothing fits, return no picks, a no_result_reason and 1 to 3 alternatives the user can tap.
@@ -167,6 +185,26 @@ def _chunks(text: str) -> list[str]:
     # Split after sentence ends so the web shows the reply arriving in pieces.
     parts = re.split(r"(?<=ครับ)\s*|(?<=[.!?])\s+", text.strip())
     return [p + " " for p in parts if p]
+
+
+def _fact_reason(p: ProductHit) -> str:
+    price = (
+        f"ลด {p.discount_percent}% เหลือ {_baht(p.price)} บาท" if p.discount_percent else f"ราคา {_baht(p.price)} บาท"
+    )
+    return f"รีวิว {p.rating} จาก {p.review_count:,} รีวิว {price} ส่งถึง {_thai_date(p.delivery_date)} จากร้าน {p.shop.name}"
+
+
+def _mix_categories(items: list[ProductHit]) -> list[ProductHit]:
+    """Round-robin across categories, so 'show me everything' is not 12 chairs."""
+    groups: dict[str, list[ProductHit]] = {}
+    for p in items:
+        groups.setdefault(p.category, []).append(p)
+    mixed: list[ProductHit] = []
+    while any(groups.values()):
+        for bucket in groups.values():
+            if bucket:
+                mixed.append(bucket.pop(0))
+    return mixed
 
 
 async def _last_options(history: list[HistoryMessage]) -> list[ProductHit]:
@@ -250,9 +288,16 @@ async def run_agent(
         yield _step(step_id, label)
         category = plan.category if plan.category in categories else None
         deliver_by = _parse_date(plan.deliver_by)
-        filters = dict(min_price=plan.min_price, max_price=plan.max_price, deliver_by=deliver_by, limit=_CANDIDATES)
+        seen = {pid for m in history if m.role == "bot" for pid in m.option_ids}
+        wanted = {"all": _ALL_CANDIDATES, "more": _CANDIDATES + len(seen)}.get(plan.scope, _CANDIDATES)
+        filters = dict(min_price=plan.min_price, max_price=plan.max_price, deliver_by=deliver_by, limit=wanted)
+        browse_everything = plan.scope == "all" and not plan.keywords and category is None
         result: SearchResult = await catalog.search_products(
-            plan.keywords, category=category, query=plan.summary, **filters
+            plan.keywords,
+            category=category,
+            # Listing everything: a meaning-based query would narrow the list instead.
+            query=None if browse_everything else plan.summary,
+            **filters,
         )
         yield _step(step_id, label, "done", f"เจอ {result.matched} รายการที่ตรงคำค้น")
 
@@ -260,16 +305,21 @@ async def run_agent(
             # Nothing matched at all (not even before budget/stock filters): try once with wider words.
             step_id, label = "retry", "ค้นใหม่ด้วยคำที่กว้างขึ้น"
             yield _step(step_id, label)
-            wider = await generate(
-                _BROADEN_SYSTEM,
-                f"request: {text}\nunderstood as: {plan.summary}\nkeywords that found nothing: "
-                f"{json.dumps(plan.keywords, ensure_ascii=False)}\n"
-                f"categories we sell: {json.dumps(categories, ensure_ascii=False)}",
-                Broaden,
-            )
-            result = await catalog.search_products(wider.keywords, query=wider.query or plan.summary, **filters)
-            tried = ", ".join(wider.keywords[:4]) or "คำทั่วไป"
-            yield _step(step_id, label, "done", f"ลองคำว่า {tried}: เจอ {result.matched} รายการ")
+            try:
+                wider = await generate(
+                    _BROADEN_SYSTEM,
+                    f"request: {text}\nunderstood as: {plan.summary}\nkeywords that found nothing: "
+                    f"{json.dumps(plan.keywords, ensure_ascii=False)}\n"
+                    f"categories we sell: {json.dumps(categories, ensure_ascii=False)}",
+                    Broaden,
+                )
+            except Exception:
+                # The retry is a bonus: on failure, answer with the first (empty) search.
+                yield _step(step_id, label, "error", "ค้นซ้ำไม่สำเร็จ ใช้ผลรอบแรก")
+            else:
+                result = await catalog.search_products(wider.keywords, query=wider.query or plan.summary, **filters)
+                tried = ", ".join(wider.keywords[:4]) or "คำทั่วไป"
+                yield _step(step_id, label, "done", f"ลองคำว่า {tried}: เจอ {result.matched} รายการ")
 
         excluded = [
             (result.excluded_out_of_stock, "ตัดของหมดสต็อก"),
@@ -280,6 +330,23 @@ async def run_agent(
             step_id, label = "filter", "คัดสินค้าที่ส่งไม่ได้หรือเกินงบออก"
             yield _step(step_id, label)
             yield _step(step_id, label, "done", ", ".join(f"{why} {n} รายการ" for n, why in excluded if n))
+
+        if plan.scope == "more":
+            result.items = [p for p in result.items if p.product_id not in seen]
+
+        if plan.scope == "all" and result.items:
+            # Many cards: order is relevance then rating (from the catalog), reasons are real numbers.
+            step_id, label = "rank", "เรียงตามความตรง รีวิว และจำนวนรีวิว"
+            yield _step(step_id, label)
+            shown_items = _mix_categories(result.items) if browse_everything else result.items
+            options = [ProductOption(**p.model_dump(), reason=_fact_reason(p)) for p in shown_items[:_MAX_ALL]]
+            total = len(result.items)
+            yield _step(step_id, label, "done", f"แสดง {len(options)} จาก {total} รายการ")
+            what = "สินค้าทั้งหมดบนแพลตฟอร์ม" if browse_everything else plan.summary
+            more = f" แสดง {len(options)} รายการที่ตรงและรีวิวดีที่สุดก่อน บอกหมวดหรืองบเพิ่มได้เลยครับ" if total > len(options) else ""
+            yield {"type": "message_delta", "text": f"{what} มี {total} รายการครับ{more}"}
+            yield {"type": "options", "items": [o.model_dump(mode="json") for o in options], "reason": None, "alternatives": []}
+            return
 
         step_id, label = "rank", "จัดอันดับจากรีวิว ราคา และวันส่ง"
         yield _step(step_id, label)
@@ -309,10 +376,15 @@ async def run_agent(
             yield {"type": "options", "items": items, "reason": None, "alternatives": []}
         else:
             budget = f" ในงบ {_baht(plan.max_price)} บาท" if plan.max_price else ""
+            fallback = (
+                "ไม่มีตัวเลือกอื่นนอกจากที่แสดงไปแล้วครับ"
+                if plan.scope == "more"
+                else f"ยังไม่มีสินค้าที่ตรงกับ {plan.summary}{budget}"
+            )
             yield {
                 "type": "options",
                 "items": [],
-                "reason": ranking.no_result_reason or f"ยังไม่มีสินค้าที่ตรงกับ {plan.summary}{budget}",
+                "reason": ranking.no_result_reason or fallback,
                 "alternatives": ranking.alternatives[:3] or ["ดูสินค้าทั้งหมดในหมวดนี้"],
             }
     except Exception:

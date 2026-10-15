@@ -23,6 +23,11 @@ export function categoryIcon(category: string) {
   if (category.includes("หูฟัง")) return "🎧";
   if (category.includes("แท็บเล็ต")) return "📱";
   if (category.includes("ไฟ") || category.includes("โคม")) return "💡";
+  if (category.includes("โต๊ะ")) return "🖥️";
+  if (category.includes("คีย์บอร์ด") || category.includes("เมาส์")) return "⌨️";
+  if (category.includes("กระเป๋า")) return "🎒";
+  if (category.includes("ครัว")) return "🍳";
+  if (category.includes("ออกกำลังกาย")) return "🏋️";
   return "🛍️";
 }
 
