@@ -92,10 +92,10 @@ class Order(SQLModel, table=True):
     address: dict = Field(sa_column=Column(JSON, nullable=False))
     payment_method: str
     status: str
-    promptpay_payload: str | None = None
-    slip_check: dict | None = Field(default=None, sa_column=Column(JSON))
-    # Set only when a slip is accepted, so the unique index rejects a slip reused on another order.
-    slip_ref: str | None = Field(default=None, unique=True)
+    payment_intent_id: str | None = Field(default=None, unique=True)
+    payment_qr_url: str | None = None
+    payment_test_url: str | None = None
+    payment_expires_at: datetime | None = None
     tracking_number: str | None = Field(default=None, unique=True)
     created_at: datetime = Field(default_factory=utcnow)
     paid_at: datetime | None = None

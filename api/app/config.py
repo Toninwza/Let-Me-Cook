@@ -9,6 +9,11 @@ class Settings(BaseSettings):
     # Comma-separated list of origins allowed to call the API directly.
     cors_origins: str = "http://localhost:3000"
 
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
+    # Use a test key (sk_test_...). Checkout returns 503 while this is empty.
+    stripe_secret_key: str = ""
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

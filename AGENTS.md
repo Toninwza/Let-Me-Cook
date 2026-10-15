@@ -5,7 +5,7 @@ Read this file before writing any code. `CLAUDE.md` points here. `web/AGENTS.md`
 ## What we are building
 
 An AI shopping agent in a chat. The user states a need once, the bot searches shops on our own
-platform, picks 3 products with reasons, and closes the sale in the chat (PromptPay QR, slip check).
+platform, picks 3 products with reasons, and closes the sale in the chat (PromptPay QR via Stripe).
 Spec: `docs/contract.md`. Example stream: `api/app/ai/fixtures/chat_stream.json`.
 
 ## Words used in the product
@@ -22,10 +22,9 @@ Spec: `docs/contract.md`. Example stream: `api/app/ai/fixtures/chat_stream.json`
 | Path | Owner | Notes |
 |---|---|---|
 | `web/` | Kiratikorn | Next.js App Router |
-| `api/app/` except `ai/` | Kiratikorn | routes, SSE, DB, catalog, checkout, deploy |
-| `api/app/models.py` | Kiratikorn only | the DB schema, see "Schema" below |
-| `api/app/ai/` | AI teammate | pure Python, never imports FastAPI or touches HTTP |
-| `api/seed/`, `docs/` test sets, pitch | third teammate | |
+| `api/` (routes, SSE, DB, catalog, checkout, `ai/`) | anupat2046 | backend. `ai/` stays pure Python |
+| `api/app/models.py` | anupat2046 only | the DB schema, see "Schema" below |
+| `api/seed/`, `docs/` test sets, pitch | shared | |
 
 Do not edit files you do not own. If you need a change there, ask the owner.
 
@@ -40,8 +39,8 @@ Do not edit files you do not own. If you need a change there, ask the owner.
 3. **Every chat stream ends with exactly one `done` event**, also after an `error`.
 4. **The AI module only talks to the rest of the app through** `app.catalog` (product data) and
    `app.schemas` (types). It does not open DB sessions, read env files for DB, or call our HTTP API.
-5. **Routes never import from inside `app/ai/`** except the three public functions:
-   `run_agent`, `transcribe`, `verify_slip`.
+5. **Routes never import from inside `app/ai/`** except the two public functions:
+   `run_agent`, `transcribe`. Stripe lives in `app/payments.py`, never in `ai/`.
 6. **The browser only calls `/api/*`.** It never talks to Supabase directly (RLS is on and has no
    policies, so the anon key is blocked on purpose).
 7. **Secrets:** this repo is public. Keys go in `api/.env` (git ignored). Never commit real keys or
@@ -50,7 +49,7 @@ Do not edit files you do not own. If you need a change there, ask the owner.
 
 ## Schema
 
-- Only Kiratikorn edits `api/app/models.py`.
+- Only anupat2046 edits `api/app/models.py`.
 - Tables are created on API startup with `create_all`, which only creates missing tables. It does
   **not** add new columns to an existing table. After changing a model, drop and recreate the
   table in Supabase (fine while there is no real data) or run an `ALTER TABLE` by hand.
@@ -73,7 +72,8 @@ cd api && uv run python -m app.ai.try "หาเก้าอี้ทำงา�
 ```
 
 Prints every event `run_agent` yields. Use it to check your output against the contract.
-The stub plays `/clarify`, `/no_results`, `/pick`, `/error` turns from the fixture. In Git Bash
+Needs `GEMINI_API_KEY` in `api/.env`. Messages `/clarify`, `/no_results`, `/pick`, `/error` replay
+fixture turns instead, so the web can render every event without a key. In Git Bash
 prefix the command with `MSYS_NO_PATHCONV=1`, or Git Bash rewrites `/clarify` into a Windows path.
 
 ## Git

@@ -42,7 +42,8 @@ Status tags: **[P0]** built tonight, **[P2]** checkout (by 02:00), **[P3]** Frid
 | `rating` | number | 0 to 5 |
 | `ship_days` | int | days from order to delivery |
 
-The shop's PromptPay ID is never sent to the agent or the chat. Only checkout uses it.
+Payments go through Stripe (PromptPay), so shops do not need their own PromptPay ID. The
+`promptpay_id` / `promptpay_name` columns stay in the table but nothing reads them.
 
 ### ProductHit (what `catalog` returns)
 
@@ -95,11 +96,6 @@ These numbers exist so `agent_step` labels can state real facts ("ตัดส�
 
 `option_ids` is how the agent resolves "เอาตัวแรก" or "ตัวแรกกับตัวที่สอง อันไหนดีกว่า".
 
-### SlipCheck
-
-`{ "ok": bool, "amount": number or null, "ref": str or null, "reason": str }`. `ref` is the
-reference number printed on the slip. `reason` is Thai and shown to the user when `ok` is false.
-
 ### Order [P2]
 
 | field | type | notes |
@@ -115,13 +111,14 @@ reference number printed on the slip. `reason` is Thai and shown to the user whe
 | `subtotal` | number | `unit_price * quantity` |
 | `utag_discount_percent` | int | |
 | `utag_discount` | number | `round(subtotal * percent / 100, 2)` |
-| `total` | number | `subtotal - utag_discount`, never below 1 baht |
+| `total` | number | `subtotal - utag_discount`, never below 10 baht (Stripe minimum for THB) |
 | `delivery_date` | str | |
 | `address` | Address | |
-| `payment_method` | `"promptpay"` or `"avax_escrow"` | `avax_escrow` is [P3], returns 400 until built |
+| `payment_method` | `"promptpay"` or `"avax_escrow"` | `promptpay` is paid through Stripe. `avax_escrow` is [P3], returns 400 until built |
 | `status` | see below | |
-| `promptpay_payload` | str or null | EMVCo string, the web renders it as a QR. Set after confirm |
-| `slip_check` | SlipCheck or null | result of the last slip upload |
+| `payment_qr_url` | str or null | PNG of the PromptPay QR from Stripe. Show it as `<img>`. Set after confirm |
+| `payment_test_url` | str or null | Stripe test mode only: page where the presenter taps "authorize" or "fail" instead of scanning. Null with a live key |
+| `payment_expires_at` | str or null | when the QR stops working |
 | `created_at` | str | |
 | `paid_at` | str or null | |
 | `shipped_at` | str or null | |
@@ -131,13 +128,15 @@ reference number printed on the slip. `reason` is Thai and shown to the user whe
 Status flow:
 
 ```
-pending_confirm --confirm--> awaiting_payment --slip ok--> paid --ship--> shipped --deliver--> delivered
+pending_confirm --confirm--> awaiting_payment --Stripe succeeded--> paid --ship--> shipped --deliver--> delivered
                                    ^    |
-                                   |    slip not ok
-                                   +-- slip_rejected (upload again)
-pending_confirm / awaiting_payment --cancel--> cancelled
+                                   |    Stripe failed / QR expired
+                                   +-- payment_failed (confirm again = new QR)
+pending_confirm / awaiting_payment / payment_failed --cancel--> cancelled
 ```
 
+The backend learns the payment result by asking Stripe whenever an `awaiting_payment` order is read
+(`GET /api/orders/{id}` or `GET /api/orders`). No webhook, so it works locally and deployed.
 When an order turns `paid`, `Product.stock` drops by `quantity`.
 
 ## AI module interface (Python, `app.ai`)
@@ -154,19 +153,11 @@ async def run_agent(
 ) -> AsyncIterator[dict]: ...
 
 async def transcribe(audio_bytes: bytes, mime_type: str) -> str: ...          # ElevenLabs Scribe [P3]
-
-async def verify_slip(
-    image_bytes: bytes,
-    expected_amount: float,
-    receiver: Receiver,              # { "name": str, "promptpay_id": str }
-) -> SlipCheck: ...                  # [P2]
 ```
 
 `run_agent` yields event dicts exactly as in "Chat events" below. It may end with `done` itself; if
 it does not, the route adds one. If it raises, the route sends `error` then `done`.
-
-`verify_slip` only checks what is on the slip image (amount, receiver). It does not confirm the
-transfer with a bank. In the UI and pitch call it "AI ตรวจสลิป", never "ยืนยันการโอนแล้ว".
+It uses Gemini (`GEMINI_MODEL`, default `gemini-2.5-flash`) and needs `GEMINI_API_KEY`.
 
 ## Catalog interface (Python, `app.catalog`)
 
@@ -246,12 +237,14 @@ All under `/api`. Errors use FastAPI's default `{ "detail": str }` with a 4xx/5x
 | method | path | body | response |
 |---|---|---|---|
 | POST | `/api/orders` | `{ "session_id": str or null, "user_id": str, "product_id": str, "quantity": int, "payment_method": "promptpay" }` | `Order` with status `pending_confirm` (the summary step) |
-| POST | `/api/orders/{id}/confirm` | | `Order` with status `awaiting_payment` and `promptpay_payload` |
-| POST | `/api/orders/{id}/slip` | multipart `file` (image) | `Order`, status `paid` or `slip_rejected`. A slip whose `ref` was already used by another order is `slip_rejected` with a Thai `reason` |
+| POST | `/api/orders/{id}/confirm` | | `Order` with status `awaiting_payment` and `payment_qr_url`. Also allowed from `payment_failed` (makes a new QR). 503 if Stripe is not configured |
 | POST | `/api/orders/{id}/cancel` | | `Order` |
 | POST | `/api/orders/{id}/status` | `{ "status": "shipped" or "delivered" }` | `Order`. Only `paid` to `shipped` to `delivered`; any other step is 409 |
 | GET | `/api/orders/{id}` | | `Order` |
-| GET | `/api/orders` | query `shop_id` | `list[Order]`, newest first. The shop page polls this every 3 s |
+| GET | `/api/orders` | query `shop_id` and/or `user_id`, both optional | `list[Order]`, newest first. The shop page polls this every 3 s |
+
+Order errors: 404 unknown order / product / user, 409 wrong status for the action or not enough
+stock, 400 `avax_escrow`, 502 Stripe call failed (Thai `detail`).
 
 ### [P3]
 

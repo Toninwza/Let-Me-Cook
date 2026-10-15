@@ -73,13 +73,39 @@ class HistoryMessage(BaseModel):
     created_at: datetime
 
 
-class Receiver(BaseModel):
-    name: str
-    promptpay_id: str
+OrderStatus = Literal[
+    "pending_confirm",
+    "awaiting_payment",
+    "payment_failed",
+    "paid",
+    "shipped",
+    "delivered",
+    "cancelled",
+]
 
 
-class SlipCheck(BaseModel):
-    ok: bool
-    amount: float | None
-    ref: str | None
-    reason: str
+class Order(BaseModel):
+    order_id: str
+    session_id: str | None
+    user_id: str
+    product_id: str
+    title: str
+    shop: ShopInfo
+    quantity: int
+    unit_price: float
+    subtotal: float
+    utag_discount_percent: int
+    utag_discount: float
+    total: float
+    delivery_date: date
+    address: Address
+    payment_method: Literal["promptpay", "avax_escrow"]
+    status: OrderStatus
+    payment_qr_url: str | None
+    payment_test_url: str | None
+    payment_expires_at: datetime | None
+    created_at: datetime
+    paid_at: datetime | None
+    shipped_at: datetime | None
+    delivered_at: datetime | None
+    tracking_number: str | None
