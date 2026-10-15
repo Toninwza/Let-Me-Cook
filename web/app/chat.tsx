@@ -1,16 +1,24 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { AgentSteps, Step } from "@/components/agent-steps";
+import { DecisionCard } from "@/components/decision-card";
+import { OrderCard } from "@/components/order-card";
+import { ProfilePanel } from "@/components/profile-panel";
+import { UPaySheet } from "@/components/upay-sheet";
 import {
   AgentEvent,
+  ApiError,
+  Order,
+  ProductHit,
   ProductOption,
-  StepStatus,
   UserProfile,
   createSession,
+  listProducts,
   sendMessage,
 } from "@/lib/api";
-
-type Step = { id: string; label: string; status: StepStatus; detail: string | null };
+import { useBotVoice, useVoiceInput } from "@/lib/hooks";
 
 type BotTurn = {
   role: "bot";
@@ -23,27 +31,30 @@ type BotTurn = {
   done: boolean;
 };
 
-type Turn = { role: "user"; text: string } | BotTurn;
+type Turn = { role: "user"; text: string; voice: boolean } | BotTurn | { role: "receipt"; order: Order };
+
+type Checkout = { product: ProductHit; quantity: number };
+
+const EXAMPLES = [
+  "หาเก้าอี้ทำงาน ergonomic งบ 3,000 ส่งภายในวันอาทิตย์",
+  "นั่งทำงานทั้งวันแล้วปวดหลัง อยากได้อะไรช่วย",
+  "หูฟังใส่ออกกำลังกาย งบไม่เกิน 1,500",
+  "อุปกรณ์เรียนออนไลน์และจดโน้ต งบ 5,000",
+];
 
 function applyEvent(turn: BotTurn, event: AgentEvent): BotTurn {
   switch (event.type) {
     case "agent_step": {
       const step = { id: event.step_id, label: event.label, status: event.status, detail: event.detail };
       const exists = turn.steps.some((s) => s.id === step.id);
-      return {
-        ...turn,
-        steps: exists ? turn.steps.map((s) => (s.id === step.id ? step : s)) : [...turn.steps, step],
-      };
+      return { ...turn, steps: exists ? turn.steps.map((s) => (s.id === step.id ? step : s)) : [...turn.steps, step] };
     }
     case "message_delta":
       return { ...turn, text: turn.text + event.text };
     case "clarify":
       return { ...turn, clarify: { question: event.question, choices: event.choices ?? [] } };
     case "options":
-      return {
-        ...turn,
-        options: { items: event.items, reason: event.reason, alternatives: event.alternatives ?? [] },
-      };
+      return { ...turn, options: { items: event.items, reason: event.reason, alternatives: event.alternatives ?? [] } };
     case "checkout_request":
       return { ...turn, checkout: { product_id: event.product_id, quantity: event.quantity } };
     case "error":
@@ -53,12 +64,13 @@ function applyEvent(turn: BotTurn, event: AgentEvent): BotTurn {
   }
 }
 
-const baht = new Intl.NumberFormat("th-TH", { style: "currency", currency: "THB", maximumFractionDigits: 2 });
-const thaiDate = new Intl.DateTimeFormat("th-TH", { weekday: "short", day: "numeric", month: "short" });
-
-function formatDate(iso: string) {
-  const [y, m, d] = iso.split("-").map(Number);
-  return thaiDate.format(new Date(y, m - 1, d));
+/** What the bot says out loud for a finished turn. */
+function spokenText(turn: BotTurn) {
+  if (turn.error) return "";
+  const parts = [turn.text.trim()];
+  if (turn.clarify) parts.push(turn.clarify.question);
+  if (turn.options && turn.options.items.length === 0 && turn.options.reason) parts.push(turn.options.reason);
+  return parts.filter(Boolean).join(" ");
 }
 
 export default function Chat() {
@@ -68,8 +80,14 @@ export default function Chat() {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [checkout, setCheckout] = useState<Checkout | null>(null);
+  const [voiceOn, setVoiceOn] = useState(true);
+  const [micError, setMicError] = useState<string | null>(null);
+  const products = useRef(new Map<string, ProductHit>());
   const started = useRef(false);
   const bottom = useRef<HTMLDivElement>(null);
+  const mic = useVoiceInput();
+  const bot = useBotVoice();
 
   async function startSession() {
     setSessionError(null);
@@ -92,28 +110,65 @@ export default function Chat() {
     bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [turns]);
 
-  async function send(text: string) {
+  async function findProduct(id: string) {
+    const known = products.current.get(id);
+    if (known) return known;
+    const all = await listProducts();
+    all.forEach((p) => products.current.set(p.product_id, p));
+    return products.current.get(id) ?? null;
+  }
+
+  async function openCheckout(productId: string, quantity: number) {
+    bot.stop();
+    const product = await findProduct(productId).catch(() => null);
+    if (product) setCheckout({ product, quantity });
+  }
+
+  async function send(text: string, voice = false) {
     const clean = text.trim();
     if (!clean || !sessionId || busy) return;
+    bot.stop();
     setInput("");
     setBusy(true);
-    setTurns((t) => [...t, { role: "user", text: clean }, { role: "bot", steps: [], text: "", done: false }]);
-
-    const updateBot = (fn: (turn: BotTurn) => BotTurn) =>
-      setTurns((t) => {
-        const last = t[t.length - 1];
-        return last?.role === "bot" ? [...t.slice(0, -1), fn(last)] : t;
-      });
+    let turn: BotTurn = { role: "bot", steps: [], text: "", done: false };
+    setTurns((t) => [...t, { role: "user", text: clean, voice }, turn]);
+    const show = (next: BotTurn) => {
+      turn = next;
+      setTurns((t) => [...t.slice(0, -1), next]);
+    };
 
     try {
       for await (const event of sendMessage(sessionId, clean)) {
-        updateBot((turn) => applyEvent(turn, event));
+        show(applyEvent(turn, event));
+        if (event.type === "options") event.items.forEach((p) => products.current.set(p.product_id, p));
       }
     } catch {
-      updateBot((turn) => ({ ...turn, error: "การเชื่อมต่อขาดหาย ลองส่งใหม่อีกครั้งครับ" }));
+      show({ ...turn, error: "การเชื่อมต่อขาดหาย ลองส่งใหม่อีกครั้งครับ" });
     } finally {
-      updateBot((turn) => ({ ...turn, done: true }));
+      show({ ...turn, done: true });
       setBusy(false);
+    }
+
+    if (voiceOn) bot.say(spokenText(turn));
+    if (turn.checkout) openCheckout(turn.checkout.product_id, turn.checkout.quantity);
+  }
+
+  async function toggleMic() {
+    setMicError(null);
+    if (mic.state === "recording") {
+      try {
+        const text = await mic.stop();
+        if (text) send(text, true);
+      } catch (e) {
+        setMicError(e instanceof ApiError ? e.message : "แปลงเสียงไม่สำเร็จ ลองใหม่อีกครั้งครับ");
+      }
+      return;
+    }
+    try {
+      bot.stop();
+      await mic.start();
+    } catch {
+      setMicError("เปิดไมโครโฟนไม่ได้ ตรวจสิทธิ์การใช้ไมค์ในเบราว์เซอร์");
     }
   }
 
@@ -122,148 +177,257 @@ export default function Chat() {
     send(input);
   }
 
-  const optionTitles = new Map<string, string>();
-  for (const t of turns) {
-    if (t.role === "bot") t.options?.items.forEach((o) => optionTitles.set(o.product_id, o.title));
+  function onPaid(order: Order) {
+    setTurns((t) => [...t, { role: "receipt", order }]);
+    if (voiceOn) bot.say(`ชำระเงินเรียบร้อยแล้วครับ ของจะส่งถึงตามกำหนด`);
   }
 
-  return (
-    <div className="mx-auto flex h-dvh w-full max-w-md flex-col bg-white dark:bg-neutral-950">
-      <header className="border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
-        <h1 className="text-base font-semibold">Let-Me-Cook</h1>
-        <p className="text-xs text-neutral-500">
-          {user ? `สวัสดี ${user.display_name} บอกได้เลยว่าอยากได้อะไร` : "กำลังเชื่อมต่อ..."}
-        </p>
-      </header>
+  const ready = Boolean(sessionId);
+  const recording = mic.state === "recording";
 
-      <main className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-        {sessionError && (
-          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-            {sessionError}{" "}
-            <button className="underline" onClick={startSession}>
-              ลองใหม่
-            </button>
+  return (
+    <div className="flex min-h-dvh justify-center bg-linear-to-br from-violet-100 via-white to-fuchsia-100 sm:items-center sm:p-4 lg:p-6">
+      <div className="flex h-dvh w-full overflow-hidden bg-[#faf9ff] sm:h-[calc(100dvh-2rem)] sm:max-w-2xl sm:rounded-[2rem] sm:shadow-2xl sm:ring-1 sm:ring-violet-100 lg:h-[min(56rem,calc(100dvh-3rem))] lg:max-w-6xl">
+        <aside className="hidden w-80 shrink-0 border-r border-violet-100 bg-violet-50/40 lg:block">
+          <ProfilePanel user={user} />
+        </aside>
+        <section className="flex min-w-0 flex-1 flex-col">
+        <header className="flex items-center gap-3 bg-white/90 px-4 py-3 backdrop-blur">
+          <div className="grid h-10 w-10 place-items-center rounded-2xl bg-linear-to-br from-violet-600 to-fuchsia-600 text-sm font-bold text-white shadow-md shadow-violet-200">
+            LM
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-sm font-semibold">Let-Me-Cook</h1>
+            <p className="truncate text-[11px] text-neutral-500">
+              {bot.speaking ? "🔊 bot กำลังพูด..." : busy ? "bot กำลังหาของให้..." : "AI ผู้ช่วยช้อปปิ้ง บอกครั้งเดียว จบในแชต"}
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              if (voiceOn) bot.stop();
+              setVoiceOn(!voiceOn);
+            }}
+            aria-label={voiceOn ? "ปิดเสียงตอบ" : "เปิดเสียงตอบ"}
+            title={voiceOn ? "ปิดเสียงตอบ" : "เปิดเสียงตอบ"}
+            className={`grid h-9 w-9 place-items-center rounded-full text-base ${voiceOn ? "bg-violet-100 text-violet-700" : "bg-neutral-100 text-neutral-400"}`}
+          >
+            {voiceOn ? "🔊" : "🔇"}
+          </button>
+          <Link
+            href="/shop"
+            title="หน้าร้านค้า"
+            className="grid h-9 w-9 place-items-center rounded-full bg-neutral-100 text-base hover:bg-neutral-200"
+          >
+            🏪
+          </Link>
+        </header>
+
+        {user && (
+          <div className="flex items-center gap-2 border-y border-violet-100 bg-violet-50/70 px-4 py-1.5 text-[11px] text-violet-800 lg:hidden">
+            <span className="rounded-full bg-violet-600 px-1.5 py-px font-semibold text-white">U-Tag</span>
+            <span className="truncate">
+              {user.display_name} · ส่วนลด {user.discount_percent}% · ส่งที่ {user.address.district} {user.address.province}
+            </span>
           </div>
         )}
 
-        {turns.map((turn, i) =>
-          turn.role === "user" ? (
-            <div key={i} className="flex justify-end">
-              <p className="max-w-[85%] rounded-2xl rounded-br-sm bg-neutral-900 px-3 py-2 text-sm text-white dark:bg-neutral-100 dark:text-neutral-900">
-                {turn.text}
-              </p>
+        <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+          <div className="mx-auto max-w-3xl space-y-5">
+          {sessionError && (
+            <div className="rounded-2xl bg-red-50 p-3 text-sm text-red-700">
+              {sessionError}{" "}
+              <button className="font-medium underline" onClick={startSession}>
+                ลองใหม่
+              </button>
             </div>
-          ) : (
-            <BotMessage
-              key={i}
-              turn={turn}
-              disabled={busy}
-              onReply={send}
-              titleOf={(id) => optionTitles.get(id) ?? id}
-            />
-          ),
-        )}
-        <div ref={bottom} />
-      </main>
+          )}
 
-      <form
-        onSubmit={onSubmit}
-        className="flex gap-2 border-t border-neutral-200 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] dark:border-neutral-800"
-      >
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="เช่น หาเก้าอี้ทำงาน งบ 3,000 ส่งภายในวันอาทิตย์"
-          maxLength={2000}
-          disabled={!sessionId}
-          className="min-w-0 flex-1 rounded-full border border-neutral-300 bg-transparent px-4 py-2 text-sm outline-none focus:border-neutral-500 dark:border-neutral-700"
+          {turns.length === 0 && !sessionError && (
+            <section className="animate-rise space-y-4 pt-6 text-center sm:pt-12">
+              <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-linear-to-br from-violet-600 to-fuchsia-600 text-3xl shadow-lg shadow-violet-200">
+                🛍️
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold">
+                  {user ? `สวัสดีครับ ${user.display_name}` : "กำลังเชื่อมต่อ..."}
+                </h2>
+                <p className="mt-1 text-sm text-neutral-500">
+                  พิมพ์หรือกดไมค์บอกสิ่งที่อยากได้ bot จะคัดมาให้ 3 ตัว แล้วจ่ายได้ในแชต
+                </p>
+              </div>
+              <div className="grid gap-2 text-left sm:grid-cols-2">
+                {EXAMPLES.map((ex) => (
+                  <button
+                    key={ex}
+                    disabled={!ready || busy}
+                    onClick={() => send(ex)}
+                    className="rounded-2xl bg-white px-4 py-3 text-sm text-neutral-700 shadow-sm ring-1 ring-violet-100 transition hover:ring-violet-300 disabled:opacity-50"
+                  >
+                    {ex}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {turns.map((turn, i) => {
+            if (turn.role === "user")
+              return (
+                <div key={i} className="animate-rise flex justify-end">
+                  <p className="max-w-[85%] rounded-3xl rounded-br-md bg-linear-to-br from-violet-600 to-fuchsia-600 px-4 py-2.5 text-sm text-white shadow-sm">
+                    {turn.voice && <span className="mr-1 opacity-80">🎙️</span>}
+                    {turn.text}
+                  </p>
+                </div>
+              );
+            if (turn.role === "receipt")
+              return (
+                <div key={i} className="pl-10 md:max-w-md">
+                  <OrderCard initial={turn.order} />
+                </div>
+              );
+            return (
+              <BotMessage
+                key={i}
+                turn={turn}
+                utagPercent={user?.discount_percent ?? 0}
+                disabled={busy}
+                onReply={send}
+                onBuy={(id) => openCheckout(id, 1)}
+              />
+            );
+          })}
+          <div ref={bottom} />
+          </div>
+        </main>
+
+        <footer className="space-y-2 bg-white/90 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
+          {micError && <p className="mx-auto max-w-3xl px-2 text-xs text-red-600">{micError}</p>}
+          <form onSubmit={onSubmit} className="mx-auto flex max-w-3xl items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleMic}
+              disabled={!ready || busy || mic.state === "transcribing"}
+              aria-label={recording ? "หยุดอัดเสียงและส่ง" : "พูดแทนการพิมพ์"}
+              className={`relative grid h-11 w-11 shrink-0 place-items-center rounded-full text-lg transition disabled:opacity-40 ${
+                recording ? "bg-red-500 text-white" : "bg-violet-100 text-violet-700 hover:bg-violet-200"
+              }`}
+            >
+              {recording && <span className="absolute inset-0 animate-ping rounded-full bg-red-400 opacity-60" />}
+              <span className="relative">{mic.state === "transcribing" ? "…" : recording ? "■" : "🎙️"}</span>
+            </button>
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={
+                recording
+                  ? `กำลังฟัง... ${mic.seconds}s กดปุ่มแดงเมื่อพูดจบ`
+                  : mic.state === "transcribing"
+                    ? "กำลังแปลงเสียงเป็นข้อความ..."
+                    : "บอกสิ่งที่อยากได้ เช่น งบ วันที่อยากได้"
+              }
+              maxLength={2000}
+              disabled={!ready || recording}
+              className="min-w-0 flex-1 rounded-full bg-neutral-100 px-4 py-3 text-sm outline-none ring-violet-300 placeholder:text-neutral-400 focus:bg-white focus:ring-2"
+            />
+            <button
+              type="submit"
+              disabled={!ready || busy || !input.trim()}
+              aria-label="ส่ง"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-linear-to-br from-violet-600 to-fuchsia-600 text-white shadow-md transition hover:brightness-110 disabled:opacity-40"
+            >
+              ➤
+            </button>
+          </form>
+        </footer>
+        </section>
+      </div>
+
+      {checkout && user && (
+        <UPaySheet
+          product={checkout.product}
+          initialQuantity={checkout.quantity}
+          user={user}
+          sessionId={sessionId}
+          onClose={() => setCheckout(null)}
+          onPaid={onPaid}
         />
-        <button
-          type="submit"
-          disabled={!sessionId || busy || !input.trim()}
-          className="rounded-full bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-40 dark:bg-neutral-100 dark:text-neutral-900"
-        >
-          ส่ง
-        </button>
-      </form>
+      )}
     </div>
   );
 }
 
 function BotMessage({
   turn,
+  utagPercent,
   disabled,
   onReply,
-  titleOf,
+  onBuy,
 }: {
   turn: BotTurn;
+  utagPercent: number;
   disabled: boolean;
   onReply: (text: string) => void;
-  titleOf: (productId: string) => string;
+  onBuy: (productId: string) => void;
 }) {
   const waiting = !turn.done && turn.steps.length === 0 && !turn.text;
   return (
-    <div className="space-y-2">
-      {waiting && <p className="text-sm text-neutral-500">bot กำลังคิด...</p>}
+    <div className="flex gap-2">
+      <div className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-linear-to-br from-violet-600 to-fuchsia-600 text-[10px] font-bold text-white">
+        LM
+      </div>
+      <div className="min-w-0 flex-1 space-y-2.5">
+        {waiting && (
+          <div className="flex w-fit gap-1 rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-violet-100">
+            {[0, 1, 2].map((d) => (
+              <span key={d} className="h-2 w-2 animate-bounce rounded-full bg-violet-400" style={{ animationDelay: `${d * 120}ms` }} />
+            ))}
+          </div>
+        )}
 
-      {turn.steps.length > 0 && (
-        <ol className="space-y-1 rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-xs dark:border-neutral-800 dark:bg-neutral-900">
-          {turn.steps.map((step) => (
-            <li key={step.id} className="flex gap-2">
-              <StepIcon status={step.status} />
-              <span>
-                <span className={step.status === "error" ? "text-red-600" : ""}>{step.label}</span>
-                {step.detail && <span className="text-neutral-500">: {step.detail}</span>}
-              </span>
-            </li>
-          ))}
-        </ol>
-      )}
+        <AgentSteps steps={turn.steps} done={turn.done} />
 
-      {turn.text && <p className="text-sm leading-relaxed">{turn.text}</p>}
+        {turn.text && (
+          <p className="animate-rise w-fit max-w-full rounded-3xl rounded-tl-md bg-white px-4 py-2.5 text-sm leading-relaxed shadow-sm ring-1 ring-violet-100">
+            {turn.text}
+          </p>
+        )}
 
-      {turn.clarify && (
-        <div className="space-y-2">
-          <p className="text-sm font-medium">{turn.clarify.question}</p>
-          <Chips items={turn.clarify.choices} disabled={disabled} onPick={onReply} />
-        </div>
-      )}
+        {turn.clarify && (
+          <div className="animate-rise space-y-2">
+            <p className="w-fit rounded-3xl rounded-tl-md bg-white px-4 py-2.5 text-sm font-medium shadow-sm ring-1 ring-violet-100">
+              {turn.clarify.question}
+            </p>
+            <Chips items={turn.clarify.choices} disabled={disabled} onPick={onReply} />
+          </div>
+        )}
 
-      {turn.options && turn.options.items.length > 0 && (
-        <div className="space-y-2">
-          {turn.options.items.map((item, idx) => (
-            <ProductCard key={item.product_id} item={item} rank={idx + 1} />
-          ))}
-        </div>
-      )}
+        {turn.options && turn.options.items.length > 0 && (
+          <div className="rail -mr-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 pr-4 md:mr-0 md:grid md:grid-cols-3 md:overflow-visible md:pb-0 md:pr-0">
+            {turn.options.items.map((item, idx) => (
+              <DecisionCard
+                key={item.product_id}
+                item={item}
+                rank={idx + 1}
+                utagPercent={utagPercent}
+                disabled={disabled}
+                onBuy={() => onBuy(item.product_id)}
+              />
+            ))}
+          </div>
+        )}
 
-      {turn.options && turn.options.items.length === 0 && (
-        <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950">
-          <p>{turn.options.reason ?? "ไม่เจอสินค้าที่ตรงเงื่อนไข"}</p>
-          <Chips items={turn.options.alternatives} disabled={disabled} onPick={onReply} />
-        </div>
-      )}
+        {turn.options && turn.options.items.length === 0 && (
+          <div className="animate-rise space-y-2.5 rounded-3xl bg-amber-50 p-4 text-sm ring-1 ring-amber-200">
+            <p className="text-amber-900">{turn.options.reason ?? "ไม่เจอสินค้าที่ตรงเงื่อนไข"}</p>
+            <Chips items={turn.options.alternatives} disabled={disabled} onPick={onReply} />
+          </div>
+        )}
 
-      {turn.checkout && (
-        <p className="rounded-lg border border-neutral-200 p-3 text-sm dark:border-neutral-800">
-          สั่งซื้อ: {titleOf(turn.checkout.product_id)} จำนวน {turn.checkout.quantity}
-        </p>
-      )}
-
-      {turn.error && (
-        <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-          {turn.error}
-        </p>
-      )}
+        {turn.error && <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-700">{turn.error}</p>}
+      </div>
     </div>
   );
-}
-
-function StepIcon({ status }: { status: StepStatus }) {
-  if (status === "running")
-    return <span className="mt-0.5 inline-block h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-neutral-400 border-t-transparent" />;
-  if (status === "error") return <span className="w-3 shrink-0 text-red-600">✕</span>;
-  return <span className="w-3 shrink-0 text-green-600">✓</span>;
 }
 
 function Chips({ items, disabled, onPick }: { items: string[]; disabled: boolean; onPick: (t: string) => void }) {
@@ -275,36 +439,11 @@ function Chips({ items, disabled, onPick }: { items: string[]; disabled: boolean
           key={item}
           disabled={disabled}
           onClick={() => onPick(item)}
-          className="rounded-full border border-neutral-300 px-3 py-1 text-xs hover:bg-neutral-100 disabled:opacity-40 dark:border-neutral-700 dark:hover:bg-neutral-800"
+          className="rounded-full bg-white px-3.5 py-1.5 text-xs font-medium text-violet-700 shadow-sm ring-1 ring-violet-200 transition hover:bg-violet-50 disabled:opacity-40"
         >
           {item}
         </button>
       ))}
     </div>
-  );
-}
-
-function ProductCard({ item, rank }: { item: ProductOption; rank: number }) {
-  return (
-    <article className="rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-semibold">
-          <span className="mr-1 text-neutral-400">{rank}.</span>
-          {item.title}
-        </h3>
-        <div className="shrink-0 text-right">
-          <p className="text-sm font-semibold">{baht.format(item.price)}</p>
-          {item.discount_percent > 0 && (
-            <p className="text-xs text-neutral-500">
-              <s>{baht.format(item.original_price)}</s> -{item.discount_percent}%
-            </p>
-          )}
-        </div>
-      </div>
-      <p className="mt-1 text-xs text-neutral-500">
-        ★ {item.rating.toFixed(1)} ({item.review_count}) · {item.shop.name} · ส่งถึง {formatDate(item.delivery_date)}
-      </p>
-      <p className="mt-2 text-xs leading-relaxed">{item.reason}</p>
-    </article>
   );
 }

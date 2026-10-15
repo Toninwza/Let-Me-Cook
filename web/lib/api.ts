@@ -27,12 +27,59 @@ export type ProductOption = {
 
 export type Address = { line: string; district: string; province: string; postcode: string };
 
+export type PastPurchase = {
+  product_id: string;
+  title: string;
+  category: string;
+  price: number;
+  purchased_at: string;
+};
+
 export type UserProfile = {
   user_id: string;
   display_name: string;
   address: Address;
   interests: string[];
+  purchase_history: PastPurchase[];
   discount_percent: number;
+};
+
+export type ProductHit = Omit<ProductOption, "reason">;
+
+export type OrderStatus =
+  | "pending_confirm"
+  | "awaiting_payment"
+  | "payment_failed"
+  | "paid"
+  | "shipped"
+  | "delivered"
+  | "cancelled";
+
+export type Order = {
+  order_id: string;
+  session_id: string | null;
+  user_id: string;
+  product_id: string;
+  title: string;
+  shop: ShopInfo;
+  quantity: number;
+  unit_price: number;
+  subtotal: number;
+  utag_discount_percent: number;
+  utag_discount: number;
+  total: number;
+  delivery_date: string;
+  address: Address;
+  payment_method: "promptpay" | "avax_escrow";
+  status: OrderStatus;
+  payment_qr_url: string | null;
+  payment_test_url: string | null;
+  payment_expires_at: string | null;
+  created_at: string;
+  paid_at: string | null;
+  shipped_at: string | null;
+  delivered_at: string | null;
+  tracking_number: string | null;
 };
 
 export type StepStatus = "running" | "done" | "error";
@@ -88,4 +135,56 @@ export async function* sendMessage(
       if (data) yield JSON.parse(data) as AgentEvent;
     }
   }
+}
+
+/** Error with the backend's Thai `detail`, safe to show to the user. */
+export class ApiError extends Error {}
+
+async function call<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(path, init);
+  if (!res.ok) {
+    let detail = "ระบบขัดข้อง ลองใหม่อีกครั้งครับ";
+    try {
+      const body = await res.json();
+      if (typeof body.detail === "string") detail = body.detail;
+    } catch {}
+    throw new ApiError(detail);
+  }
+  return res.json();
+}
+
+const json = (body: unknown): RequestInit => ({
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify(body),
+});
+
+export const listProducts = () => call<ProductHit[]>("/api/products");
+
+export const createOrder = (body: {
+  session_id: string | null;
+  user_id: string;
+  product_id: string;
+  quantity: number;
+}) => call<Order>("/api/orders", json({ ...body, payment_method: "promptpay" }));
+
+export const confirmOrder = (id: string) => call<Order>(`/api/orders/${id}/confirm`, { method: "POST" });
+export const cancelOrder = (id: string) => call<Order>(`/api/orders/${id}/cancel`, { method: "POST" });
+export const getOrder = (id: string) => call<Order>(`/api/orders/${id}`);
+export const setOrderStatus = (id: string, status: "shipped" | "delivered") =>
+  call<Order>(`/api/orders/${id}/status`, json({ status }));
+export const listOrders = (params: { shop_id?: string; user_id?: string }) =>
+  call<Order[]>(`/api/orders?${new URLSearchParams(params as Record<string, string>)}`);
+
+export async function transcribe(audio: Blob): Promise<string> {
+  const form = new FormData();
+  form.append("file", audio, "voice.webm");
+  const { text } = await call<{ text: string }>("/api/voice/transcribe", { method: "POST", body: form });
+  return text;
+}
+
+export async function speak(text: string): Promise<Blob> {
+  const res = await fetch("/api/voice/speak", json({ text: text.slice(0, 600) }));
+  if (!res.ok) throw new ApiError("สร้างเสียงไม่สำเร็จ");
+  return res.blob();
 }
