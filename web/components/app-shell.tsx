@@ -1,6 +1,6 @@
 "use client";
 
-import { t } from "@/lib/i18n";
+import { Lang, t, useLang } from "@/lib/i18n";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import Link from "next/link";
@@ -107,6 +107,7 @@ function SidebarBody({ collapsed, onToggle, onNavigate }: { collapsed: boolean; 
       </nav>
 
       <div className="flex-1" />
+      <LangToggle collapsed={collapsed} />
       <UserCard collapsed={collapsed} onNavigate={onNavigate} />
     </>
   );
@@ -117,6 +118,33 @@ function Tip({ children }: { children: React.ReactNode }) {
     <span className="pointer-events-none absolute left-[calc(100%+12px)] top-1/2 z-10 -translate-y-1/2 whitespace-nowrap rounded-lg bg-ink px-2.5 py-1.5 text-[12.5px] font-medium text-paper opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
       {children}
     </span>
+  );
+}
+
+/** Small two-part box: TH | EN. Same choice as Settings, kept in the menu so it is one tap away. */
+function LangToggle({ collapsed }: { collapsed: boolean }) {
+  const { lang, setLang } = useLang();
+  return (
+    <div className={collapsed ? "flex justify-center px-3" : "px-3"}>
+      <div
+        role="radiogroup"
+        aria-label={t("ภาษา")}
+        className={`overflow-hidden rounded-xl border border-line-strong bg-paper text-[12.5px] font-bold ${collapsed ? "flex w-11 flex-col" : "flex w-fit"}`}
+      >
+        {(["th", "en"] as Lang[]).map((k) => (
+          <button
+            key={k}
+            type="button"
+            role="radio"
+            aria-checked={lang === k}
+            onClick={() => setLang(k)}
+            className={`h-8 min-w-11 px-3 ${lang === k ? "bg-basil text-paper" : "text-ink-2 hover:bg-ground"}`}
+          >
+            {k.toUpperCase()}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
