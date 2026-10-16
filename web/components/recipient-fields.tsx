@@ -1,5 +1,7 @@
 "use client";
 
+import { t } from "@/lib/i18n";
+
 import { useId } from "react";
 import type { Contact } from "@/lib/address";
 import { Field } from "./address-fields";
@@ -14,7 +16,7 @@ export default function RecipientFields({ value, onChange }: { value: Contact; o
       <Field
         label={
           <>
-            ชื่อจริง นามสกุล <span className="font-normal text-muted">(ให้คนส่งของใช้เรียก)</span>
+            {t("ชื่อจริง นามสกุล")} <span className="font-normal text-muted">{t("(ให้คนส่งของใช้เรียก)")}</span>
           </>
         }
         htmlFor={`${id}-fullname`}
@@ -24,7 +26,7 @@ export default function RecipientFields({ value, onChange }: { value: Contact; o
       <Field
         label={
           <>
-            เบอร์โทร <span className="font-normal text-muted">(ให้ขนส่งโทรหาตอนส่งของ)</span>
+            {t("เบอร์โทร")} <span className="font-normal text-muted">{t("(ให้ขนส่งโทรหาตอนส่งของ)")}</span>
           </>
         }
         htmlFor={`${id}-phone`}

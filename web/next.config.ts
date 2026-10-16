@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
   experimental: {
     agentFeedback: true,
   },
+  // Hide the Next.js dev badge (the round "N") that floats over the logo.
+  devIndicators: false,
   cacheComponents: true,
   partialPrefetching: true,
   // Browser calls /api/*; Next.js proxies it to FastAPI, so no CORS and no

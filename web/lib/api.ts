@@ -1,3 +1,4 @@
+import { t } from "@/lib/i18n";
 // Types mirror docs/contract.md. Change the contract first.
 
 import { supabase } from "@/lib/supabase";
@@ -127,7 +128,7 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
     headers: { "content-type": "application/json", ...(await authHeader()), ...init?.headers },
   });
   if (!res.ok) {
-    let detail = "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ลองใหม่อีกครั้ง";
+    let detail = t("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ลองใหม่อีกครั้ง");
     try {
       const body = await res.json();
       if (typeof body.detail === "string") detail = body.detail;
@@ -190,7 +191,7 @@ export async function transcribe(audio: Blob): Promise<string> {
   const form = new FormData();
   form.append("file", audio, "voice.webm");
   const res = await fetch("/api/voice/transcribe", { method: "POST", body: form });
-  if (!res.ok) throw new ApiError(res.status, "ฟังเสียงไม่ออก ลองพูดใหม่อีกครั้งครับ");
+  if (!res.ok) throw new ApiError(res.status, t("ฟังเสียงไม่ออก ลองพูดใหม่อีกครั้งครับ"));
   return (await res.json()).text as string;
 }
 
@@ -200,7 +201,7 @@ export async function speak(text: string): Promise<Blob> {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ text: text.slice(0, 600) }),
   });
-  if (!res.ok) throw new ApiError(res.status, "สร้างเสียงไม่สำเร็จ");
+  if (!res.ok) throw new ApiError(res.status, t("สร้างเสียงไม่สำเร็จ"));
   return res.blob();
 }
 
@@ -216,7 +217,7 @@ export async function* sendMessage(
     body: JSON.stringify({ text }),
     signal,
   });
-  if (!res.ok || !res.body) throw new ApiError(res.status, "ส่งข้อความไม่สำเร็จ");
+  if (!res.ok || !res.body) throw new ApiError(res.status, t("ส่งข้อความไม่สำเร็จ"));
 
   const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
   let buffer = "";

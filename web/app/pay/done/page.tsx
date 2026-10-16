@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { PayDone } from "./pay-done";
 
-export const metadata: Metadata = { title: "ชำระเงิน · PULL" };
+export const metadata: Metadata = { title: "Payment · PULL" };
 
 /** Stripe Checkout sends the customer back here (success_url / cancel_url). */
 export default function PayDonePage() {

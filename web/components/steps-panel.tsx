@@ -1,5 +1,7 @@
 "use client";
 
+import { t } from "@/lib/i18n";
+
 import { useState } from "react";
 import type { StepStatus } from "@/lib/api";
 
@@ -11,7 +13,7 @@ export default function StepsPanel({ steps, finished, seconds }: { steps: Step[]
   const failed = steps.some((s) => s.status === "error");
 
   return (
-    <section aria-label="ขั้นตอนที่ bot ทำ" className="rounded-2xl border border-line bg-paper px-4 py-3 text-[13px]">
+    <section aria-label={t("ขั้นตอนที่ bot ทำ")} className="rounded-2xl border border-line bg-paper px-4 py-3 text-[13px]">
       {finished ? (
         <button
           onClick={() => setOpen((v) => !v)}
@@ -20,7 +22,7 @@ export default function StepsPanel({ steps, finished, seconds }: { steps: Step[]
         >
           <span className={`h-2 w-2 rounded-full ${failed ? "bg-danger" : "bg-basil"}`} />
           <span className="flex-1">
-            bot ทำงาน {steps.length} ขั้น{seconds !== null ? ` · ${seconds.toFixed(1)} วินาที` : ""}
+            {t("bot ทำงาน {n} ขั้น", { n: steps.length })}{seconds !== null ? ` · ${t("{s} วินาที", { s: seconds.toFixed(1) })}` : ""}
           </span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`transition-transform ${open ? "rotate-90" : ""}`}>
             <path d="M9 6l6 6-6 6" />
@@ -29,7 +31,7 @@ export default function StepsPanel({ steps, finished, seconds }: { steps: Step[]
       ) : (
         <div className="flex items-center gap-2 text-xs font-semibold text-muted">
           <span className="h-2 w-2 animate-pulse rounded-full bg-saffron" />
-          bot กำลังทำงาน
+          {t("bot กำลังทำงาน")}
         </div>
       )}
       {expanded && (

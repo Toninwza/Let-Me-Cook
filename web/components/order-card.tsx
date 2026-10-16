@@ -1,5 +1,7 @@
 "use client";
 
+import { t } from "@/lib/i18n";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Order, getOrder } from "@/lib/api";
@@ -33,28 +35,28 @@ export default function OrderCard({ initial }: { initial: Order }) {
   }, [finished, initial.order_id]);
 
   return (
-    <section aria-label="ออเดอร์ของคุณ" className="space-y-3 rounded-2xl border border-line bg-paper p-3.5">
+    <section aria-label={t("ออเดอร์ของคุณ")} className="space-y-3 rounded-2xl border border-line bg-paper p-3.5">
       <div className="flex items-center justify-between">
-        <span className="font-semibold">ออเดอร์ของคุณ</span>
-        <span className="rounded-full bg-basil-soft px-2.5 py-0.5 text-xs font-semibold text-basil-dark">{STATUS_LABEL[order.status]}</span>
+        <span className="font-semibold">{t("ออเดอร์ของคุณ")}</span>
+        <span className="rounded-full bg-basil-soft px-2.5 py-0.5 text-xs font-semibold text-basil-dark">{t(STATUS_LABEL[order.status])}</span>
       </div>
       <div className="flex items-center gap-2.5">
         <ProductThumb imageUrl={null} category={order.shop.name} className="h-12 w-12 shrink-0 rounded-lg text-[9px]" />
         <div className="min-w-0">
           <div className="truncate text-[13.5px] font-medium">{order.title}</div>
           <div className="text-xs text-muted tabular-nums">
-            x{order.quantity} · จ่ายแล้ว {baht(order.total)} · {order.shop.name}
+            x{order.quantity} · {t("จ่ายแล้ว")} {baht(order.total)} · {order.shop.name}
           </div>
         </div>
       </div>
       <OrderSteps order={order} />
       {order.tracking_number && (
         <div className="text-xs text-muted">
-          เลขพัสดุ <span className="font-mono text-ink">{order.tracking_number}</span>
+          {t("เลขพัสดุ")} <span className="font-mono text-ink">{order.tracking_number}</span>
         </div>
       )}
       <Link href="/orders" className="flex h-11 items-center justify-center rounded-xl border border-line-strong font-semibold hover:bg-ground">
-        ดูรายละเอียดออเดอร์
+        {t("ดูรายละเอียดออเดอร์")}
       </Link>
     </section>
   );

@@ -1,5 +1,7 @@
 "use client";
 
+import { t } from "@/lib/i18n";
+
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { ApiError, Order, listOrders, listProducts, setOrderStatus } from "@/lib/api";
@@ -37,7 +39,7 @@ export default function ShopOrders() {
     try {
       setOrders(await listOrders({ shopId }));
     } catch {
-      setError("โหลดออเดอร์ไม่สำเร็จ");
+      setError(t("โหลดออเดอร์ไม่สำเร็จ"));
     }
   }, [shopId]);
 
@@ -57,7 +59,7 @@ export default function ShopOrders() {
     try {
       await setOrderStatus(o.order_id, status);
     } catch (e) {
-      if (!(e instanceof ApiError && e.status === 409)) setError(e instanceof ApiError ? e.message : "ทำรายการไม่สำเร็จ");
+      if (!(e instanceof ApiError && e.status === 409)) setError(e instanceof ApiError ? e.message : t("ทำรายการไม่สำเร็จ"));
     }
     setBusyId(null);
     refresh();
@@ -74,26 +76,26 @@ export default function ShopOrders() {
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-ink font-bold text-paper">{shopName.slice(0, 2).toUpperCase()}</span>
           <div className="flex-1">
             <h1 className="text-lg font-bold">{shopName}</h1>
-            <p className="text-[12.5px] text-muted">หน้าร้าน · ออเดอร์จาก PULL bot</p>
+            <p className="text-[12.5px] text-muted">{t("หน้าร้าน · ออเดอร์จาก PULL bot")}</p>
           </div>
           <span className="flex items-center gap-1.5 rounded-full bg-ground px-3 py-1 text-[12.5px] text-ink-2">
             <span className="h-2 w-2 rounded-full bg-basil" />
-            อัปเดตอัตโนมัติทุก 3 วินาที
+            {t("อัปเดตอัตโนมัติทุก 3 วินาที")}
           </span>
         </div>
       </header>
 
       <main className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-5 sm:px-6">
-        <div role="tablist" aria-label="กรองตามสถานะ" className="flex flex-wrap gap-2">
-          {TABS.map((t) => (
+        <div role="tablist" aria-label={t("กรองตามสถานะ")} className="flex flex-wrap gap-2">
+          {TABS.map((tb) => (
             <button
-              key={t.key}
+              key={tb.key}
               role="tab"
-              aria-selected={tab === t.key}
-              onClick={() => setTab(t.key)}
-              className={`h-10 rounded-full border px-4 text-[13.5px] font-medium ${tab === t.key ? "border-ink bg-ink text-paper" : "border-line-strong bg-paper hover:border-ink"}`}
+              aria-selected={tab === tb.key}
+              onClick={() => setTab(tb.key)}
+              className={`h-10 rounded-full border px-4 text-[13.5px] font-medium ${tab === tb.key ? "border-ink bg-ink text-paper" : "border-line-strong bg-paper hover:border-ink"}`}
             >
-              {t.label} <span className="tabular-nums opacity-75">{count(t.key)}</span>
+              {t(tb.label)} <span className="tabular-nums opacity-75">{count(tb.key)}</span>
             </button>
           ))}
         </div>
@@ -104,7 +106,7 @@ export default function ShopOrders() {
           <table className="w-full min-w-[860px] border-collapse text-[13.5px]">
             <thead>
               <tr className="text-left text-xs text-muted">
-                {["เวลา", "ออเดอร์", "สินค้า", "ยอด", "ส่งไปที่", "สถานะ", "ทำต่อ"].map((h, i) => (
+                {[t("เวลา"), t("ออเดอร์"), t("สินค้า"), t("ยอด"), t("ส่งไปที่"), t("สถานะ"), t("ทำต่อ")].map((h, i) => (
                   <th key={h} className={`border-b border-line px-4 py-3 font-semibold ${i === 3 || i === 6 ? "text-right" : ""}`}>
                     {h}
                   </th>
@@ -119,7 +121,7 @@ export default function ShopOrders() {
                   <td className="border-b border-line/70 px-4 py-3.5">
                     <div className="font-medium">{o.title}</div>
                     <div className="text-xs text-muted">
-                      x{o.quantity} · ส่งถึง {shortDate(o.delivery_date)}
+                      x{o.quantity} · {t("ส่งถึง {date}", { date: shortDate(o.delivery_date) })}
                     </div>
                   </td>
                   <td className="whitespace-nowrap border-b border-line/70 px-4 py-3.5 text-right font-semibold tabular-nums">{baht(o.total)}</td>
@@ -127,7 +129,7 @@ export default function ShopOrders() {
                     {o.address.district} {o.address.province}
                   </td>
                   <td className="border-b border-line/70 px-4 py-3.5">
-                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${CHIP[o.status].cls}`}>{CHIP[o.status].label}</span>
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${CHIP[o.status].cls}`}>{t(CHIP[o.status].label)}</span>
                     {o.tracking_number && <div className="mt-1 font-mono text-[11.5px] text-ink-2">{o.tracking_number}</div>}
                   </td>
                   <td className="whitespace-nowrap border-b border-line/70 px-4 py-3.5 text-right">
@@ -137,7 +139,7 @@ export default function ShopOrders() {
                         onClick={() => move(o, "shipped")}
                         className="h-10 rounded-xl bg-basil px-4 font-semibold text-paper hover:bg-basil-dark disabled:opacity-50"
                       >
-                        จัดส่ง
+                        {t("จัดส่ง")}
                       </button>
                     )}
                     {o.status === "shipped" && (
@@ -146,20 +148,20 @@ export default function ShopOrders() {
                         onClick={() => move(o, "delivered")}
                         className="h-10 rounded-xl border border-basil px-4 font-semibold text-basil hover:bg-basil-soft disabled:opacity-50"
                       >
-                        ส่งถึงแล้ว
+                        {t("ส่งถึงแล้ว")}
                       </button>
                     )}
-                    {o.status === "awaiting_payment" && <span className="text-[12.5px] text-faint">รอลูกค้าจ่าย</span>}
-                    {o.status === "delivered" && <span className="text-[12.5px] text-faint">เสร็จแล้ว</span>}
+                    {o.status === "awaiting_payment" && <span className="text-[12.5px] text-faint">{t("รอลูกค้าจ่าย")}</span>}
+                    {o.status === "delivered" && <span className="text-[12.5px] text-faint">{t("เสร็จแล้ว")}</span>}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {orders !== null && shown.length === 0 && <p className="px-4 py-8 text-center text-sm text-muted">ไม่มีออเดอร์ในสถานะนี้</p>}
-          {orders === null && <p className="px-4 py-8 text-center text-sm text-muted">กำลังโหลด</p>}
+          {orders !== null && shown.length === 0 && <p className="px-4 py-8 text-center text-sm text-muted">{t("ไม่มีออเดอร์ในสถานะนี้")}</p>}
+          {orders === null && <p className="px-4 py-8 text-center text-sm text-muted">{t("กำลังโหลด")}</p>}
         </div>
-        <p className="text-[12.5px] text-muted">กด &quot;จัดส่ง&quot; แล้วระบบสร้างเลขพัสดุให้ ลูกค้าเห็นในแชทและหน้าออเดอร์ทันที</p>
+        <p className="text-[12.5px] text-muted">{t("กด &quot;จัดส่ง&quot; แล้วระบบสร้างเลขพัสดุให้ ลูกค้าเห็นในแชทและหน้าออเดอร์ทันที")}</p>
       </main>
     </div>
   );

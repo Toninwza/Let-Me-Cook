@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans_Thai, Unbounded } from "next/font/google";
 import AuthProvider from "@/components/auth-provider";
+import LangProvider from "@/lib/i18n";
 import "./globals.css";
 
 const plexThai = IBM_Plex_Sans_Thai({
@@ -24,7 +25,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="th" className={`${plexThai.variable} ${unbounded.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-sans">
-        <AuthProvider>{children}</AuthProvider>
+        <LangProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </LangProvider>
       </body>
     </html>
   );

@@ -196,6 +196,15 @@ friend can make (`api/app/models.py`, see AGENTS.md "Schema"):
 > กับเบอร์ไปเก็บในออเดอร์ (recipient_name, recipient_phone) เหมือนที่เก็บ address ไว้ เพื่อให้ร้านเห็น
 > ว่าส่งให้ใครและโทรหาเบอร์ไหน (ถ้า `init_db` เพิ่มคอลัมน์ nullable ให้เองอยู่แล้วก็ไม่ต้องลบตาราง)
 
+### English version (branch feat/eng, uncommitted until approved)
+`web/lib/i18n.tsx` (`t()`, language provider, stored in localStorage `pull-lang`) and `web/lib/en.ts`
+(English for every Thai string; the Thai text in the code is the key). Language is chosen in `/settings`.
+Not translated: product titles, categories and shop names (they come from the database) and REST error
+messages (`detail`, Thai). The bot already answers in the language of the user's latest message (see
+`docs/contract.md`, "Language"), so the web only has to send the starter chips and quick replies in the
+chosen language, which `t()` does.
+When adding UI text: write Thai in `t("...")`, then add the English line to `en.ts`.
+
 ## 8. The design canvas (optional reference)
 
 Private Claude Design artifact: https://claude.ai/artifact/NXeHTM7Xw4sWym3FcQreMY
