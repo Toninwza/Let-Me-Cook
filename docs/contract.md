@@ -103,12 +103,12 @@ These numbers exist so `agent_step` labels can state real facts ("ตัดส�
 | `order_id` | str | |
 | `session_id` | str or null | |
 | `user_id` | str | |
-| `product_id` | str | |
-| `title` | str | snapshot at order time |
-| `shop` | ShopInfo | |
-| `quantity` | int | |
-| `unit_price` | number | `ProductHit.price` at order time |
-| `subtotal` | number | `unit_price * quantity` |
+| `product_id` | str | the first item |
+| `title` | str | snapshot at order time. With several items: first title + `" และอีก N รายการ"` |
+| `shop` | ShopInfo | shop of the first item |
+| `quantity` | int | all units in the order |
+| `unit_price` | number | `ProductHit.price` of the first item at order time |
+| `subtotal` | number | sum of `items[].subtotal` |
 | `utag_discount_percent` | int | |
 | `utag_discount` | number | `round(subtotal * percent / 100, 2)` |
 | `total` | number | `subtotal - utag_discount`, never below 10 baht (Stripe minimum for THB) |
@@ -125,6 +125,22 @@ These numbers exist so `agent_step` labels can state real facts ("ตัดส�
 | `shipped_at` | str or null | |
 | `delivered_at` | str or null | |
 | `tracking_number` | str or null | created by the backend when the order turns `shipped`: `"LMC"` + 8 random digits |
+| `items` | list[OrderLine] | every product in the order, at least one. Use this to show the order |
+
+One order can hold products from several shops. It is paid once, ships as one, and its
+`delivery_date` is the latest of its items.
+
+### OrderLine
+
+| field | type | notes |
+|---|---|---|
+| `product_id` | str | |
+| `title` | str | snapshot at order time |
+| `shop` | ShopInfo | |
+| `image_url` | str or null | current product image |
+| `unit_price` | number | `ProductHit.price` at order time |
+| `quantity` | int | |
+| `subtotal` | number | `unit_price * quantity` |
 
 Status flow:
 
@@ -138,8 +154,8 @@ pending_confirm / awaiting_payment / payment_failed --cancel--> cancelled
 
 The backend learns the payment result by asking Stripe whenever an `awaiting_payment` order is read
 (`GET /api/orders/{id}` or `GET /api/orders`). No webhook, so it works locally and deployed.
-When an order turns `paid`, `Product.stock` drops by `quantity` and the product is added to the front
-of the user's `purchase_history` (U-Tag keeps the newest 20), so the next search can use it.
+When an order turns `paid`, `Product.stock` drops by each item's `quantity` and every item is added to
+the front of the user's `purchase_history` (U-Tag keeps the newest 20), so the next search can use it.
 
 ## AI module interface (Python, `app.ai`)
 
@@ -265,15 +281,15 @@ Thai `detail` and a `Retry-After` header in seconds. Limits per IP: chat message
 
 | method | path | body | response |
 |---|---|---|---|
-| POST | `/api/orders` | `{ "session_id": str or null, "user_id": str, "product_id": str, "quantity": int, "payment_method": "promptpay" or "card" }` | `Order` with status `pending_confirm` (the summary step) |
+| POST | `/api/orders` | `{ "session_id": str or null, "user_id": str, "payment_method": "promptpay" or "card" }` plus either `"product_id": str, "quantity": int` (one product, the chat) or `"items": [{ "product_id": str, "quantity": int }]` (1 to 20 lines, the cart). Not both: 422 | `Order` with status `pending_confirm` (the summary step). A product sent twice in `items` is merged |
 | POST | `/api/orders/{id}/confirm` | | `Order` with status `awaiting_payment` and `payment_qr_url` (promptpay) or `payment_url` (card). Also allowed from `payment_failed` (makes a new QR). 503 if Stripe is not configured |
 | POST | `/api/orders/{id}/cancel` | | `Order` |
 | POST | `/api/orders/{id}/status` | `{ "status": "shipped" or "delivered" }` | `Order`. Only `paid` to `shipped` to `delivered`; any other step is 409 |
 | GET | `/api/orders/{id}` | | `Order` |
-| GET | `/api/orders` | query `shop_id` and/or `user_id`, both optional | `list[Order]`, newest first. The shop page polls this every 3 s |
+| GET | `/api/orders` | query `shop_id` and/or `user_id`, both optional | `list[Order]`, newest first. `shop_id` matches every order with at least one item from that shop. The shop page polls this every 3 s |
 
 Order errors: 404 unknown order / product / user, 409 wrong status for the action or not enough
-stock, 400 `avax_escrow`, 502 Stripe call failed (Thai `detail`).
+stock (the `detail` names the product), 400 `avax_escrow`, 502 Stripe call failed (Thai `detail`).
 
 ### [P3]
 
@@ -298,15 +314,15 @@ always up to date. A cart line is `{ "product": ProductHit, "quantity": int }`.
 
 Errors: 404 unknown user or product.
 When an order turns `paid` (see Order above), its product is removed from that user's cart in the
-same transaction. Checkout itself is unchanged: one order per product, the cart only remembers what
-the user wants to buy.
+same transaction. To pay for several cart lines at once, send them as `items` in one `POST /api/orders`;
+only the lines in that order leave the cart when it is paid.
 
 ## Web behavior [P2]
 
 - The order card in the chat polls `GET /api/orders/{id}` every 3 s and stops when the status is
   `delivered` or `cancelled`.
 - Every product card has an add-to-cart button next to the buy button. The cart sheet (header of the
-  chat) reads `GET /api/users/{id}/cart` and starts U-Pay for one line at a time.
+  chat) reads `GET /api/users/{id}/cart` and starts U-Pay for the ticked lines as one order (`items`).
 - It shows a three step bar: จ่ายแล้ว / กำลังจัดส่ง (with `tracking_number`) / ได้รับแล้ว.
 
 ## Security note

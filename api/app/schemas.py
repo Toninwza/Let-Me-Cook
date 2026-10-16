@@ -89,6 +89,16 @@ OrderStatus = Literal[
 ]
 
 
+class OrderLine(BaseModel):
+    product_id: str
+    title: str
+    shop: ShopInfo
+    image_url: str | None
+    unit_price: float
+    quantity: int
+    subtotal: float
+
+
 class Order(BaseModel):
     order_id: str
     session_id: str | None
@@ -115,3 +125,4 @@ class Order(BaseModel):
     shipped_at: datetime | None
     delivered_at: datetime | None
     tracking_number: str | None
+    items: list[OrderLine]

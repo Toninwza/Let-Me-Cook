@@ -7,16 +7,16 @@ from typing import Literal
 
 import stripe
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
-from sqlalchemy import update
+from pydantic import BaseModel, Field, model_validator
+from sqlalchemy import or_, update
 from sqlmodel import Session, col, select
 
 from app import catalog, payments
 from app.db import engine
-from app.models import AppUser, CartItem, Order, Product, Shop, utcnow
+from app.models import AppUser, CartItem, Order, OrderItem, Product, Shop, utcnow
 from app.ratelimit import limit
 from app.schemas import Order as OrderOut
-from app.schemas import ShopInfo
+from app.schemas import OrderLine, ShopInfo
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/orders", tags=["orders"])
@@ -27,12 +27,33 @@ CANCELLABLE = {"pending_confirm", "awaiting_payment", "payment_failed"}
 NEXT_STATUS = {"shipped": "paid", "delivered": "shipped"}  # target -> required current status
 
 
-class OrderIn(BaseModel):
-    session_id: str | None = None
-    user_id: str
+class LineIn(BaseModel):
     product_id: str
     quantity: int = Field(default=1, ge=1, le=99)
+
+
+class OrderIn(BaseModel):
+    """Either one product (product_id + quantity, the chat flow) or several (items, the cart)."""
+
+    session_id: str | None = None
+    user_id: str
+    product_id: str | None = None
+    quantity: int = Field(default=1, ge=1, le=99)
+    items: list[LineIn] | None = Field(default=None, min_length=1, max_length=20)
     payment_method: Literal["promptpay", "card", "avax_escrow"] = "promptpay"
+
+    @model_validator(mode="after")
+    def _one_shape(self):
+        if (self.product_id is None) == (self.items is None):
+            raise ValueError("send either product_id or items")
+        return self
+
+    def lines(self) -> list[LineIn]:
+        """Lines with repeated products merged, in the order they were sent."""
+        merged: dict[str, int] = {}
+        for line in self.items or [LineIn(product_id=self.product_id, quantity=self.quantity)]:
+            merged[line.product_id] = merged.get(line.product_id, 0) + line.quantity
+        return [LineIn(product_id=k, quantity=min(v, 99)) for k, v in merged.items()]
 
 
 class StatusIn(BaseModel):
@@ -42,14 +63,49 @@ class StatusIn(BaseModel):
 # ---------- DB helpers (sync, run in a thread) ----------
 
 
-def _out(order: Order, shop: Shop) -> OrderOut:
+def _shop_info(shop: Shop) -> ShopInfo:
+    return ShopInfo(shop_id=shop.id, name=shop.name, rating=shop.rating, ship_days=shop.ship_days)
+
+
+def _items(session: Session, order: Order) -> list[OrderItem]:
+    query = select(OrderItem).where(OrderItem.order_id == order.id).order_by(col(OrderItem.id))
+    # Orders made before order_item existed have exactly one product, stored on the order itself.
+    return list(session.exec(query).all()) or [
+        OrderItem(
+            order_id=order.id,
+            product_id=order.product_id,
+            shop_id=order.shop_id,
+            title=order.title,
+            unit_price=order.unit_price,
+            quantity=order.quantity,
+            subtotal=order.subtotal,
+        )
+    ]
+
+
+def _out(session: Session, order: Order) -> OrderOut:
+    lines = []
+    for item in _items(session, order):
+        product = session.get(Product, item.product_id)
+        lines.append(
+            OrderLine(
+                product_id=item.product_id,
+                title=item.title,
+                shop=_shop_info(session.get(Shop, item.shop_id)),
+                image_url=product.image_url if product else None,
+                unit_price=item.unit_price,
+                quantity=item.quantity,
+                subtotal=item.subtotal,
+            )
+        )
+    shop = session.get(Shop, order.shop_id)
     return OrderOut(
         order_id=order.id,
         session_id=order.session_id,
         user_id=order.user_id,
         product_id=order.product_id,
         title=order.title,
-        shop=ShopInfo(shop_id=shop.id, name=shop.name, rating=shop.rating, ship_days=shop.ship_days),
+        shop=_shop_info(shop),
         quantity=order.quantity,
         unit_price=order.unit_price,
         subtotal=order.subtotal,
@@ -69,6 +125,7 @@ def _out(order: Order, shop: Shop) -> OrderOut:
         shipped_at=order.shipped_at,
         delivered_at=order.delivered_at,
         tracking_number=order.tracking_number,
+        items=lines,
     )
 
 
@@ -85,7 +142,7 @@ def _read(order_id: str) -> OrderOut:
         order = session.get(Order, order_id)
         if order is None:
             raise HTTPException(404, "ไม่พบคำสั่งซื้อ")
-        return _out(order, session.get(Shop, order.shop_id))
+        return _out(session, order)
 
 
 def _save(order_id: str, **fields) -> OrderOut:
@@ -96,7 +153,13 @@ def _save(order_id: str, **fields) -> OrderOut:
         session.add(order)
         session.commit()
         session.refresh(order)
-        return _out(order, session.get(Shop, order.shop_id))
+        return _out(session, order)
+
+
+def _lines(order_id: str) -> list[tuple[str, int]]:
+    """(product_id, quantity) of every line of an order."""
+    with Session(engine) as session:
+        return [(i.product_id, i.quantity) for i in _items(session, session.get(Order, order_id))]
 
 
 def _mark_paid(order_id: str) -> None:
@@ -109,25 +172,29 @@ def _mark_paid(order_id: str) -> None:
         ).rowcount
         if changed:
             order = session.get(Order, order_id)
-            product = session.get(Product, order.product_id)
-            product.stock = max(0, product.stock - order.quantity)
-            session.add(product)
+            bought = []
+            for item in _items(session, order):
+                product = session.get(Product, item.product_id)
+                product.stock = max(0, product.stock - item.quantity)
+                session.add(product)
+                bought.append(
+                    {
+                        "product_id": product.id,
+                        "title": item.title,
+                        "category": product.category,
+                        "price": item.unit_price,
+                        "purchased_at": utcnow().isoformat(),
+                    }
+                )
+                # Bought: it leaves the cart.
+                cart_row = session.get(CartItem, (order.user_id, item.product_id))
+                if cart_row is not None:
+                    session.delete(cart_row)
             # U-Tag learns: the agent reads purchase_history on the next search.
             user = session.get(AppUser, order.user_id)
-            bought = {
-                "product_id": product.id,
-                "title": order.title,
-                "category": product.category,
-                "price": order.unit_price,
-                "purchased_at": utcnow().isoformat(),
-            }
             # A new list (not .insert) so SQLAlchemy sees the JSON column changed.
-            user.purchase_history = [bought, *user.purchase_history][:PURCHASE_HISTORY_KEEP]
+            user.purchase_history = [*bought, *user.purchase_history][:PURCHASE_HISTORY_KEEP]
             session.add(user)
-            # Bought: it leaves the cart.
-            cart_row = session.get(CartItem, (order.user_id, order.product_id))
-            if cart_row is not None:
-                session.delete(cart_row)
         session.commit()
 
 
@@ -176,40 +243,60 @@ async def _synced(order_id: str) -> OrderOut:
 async def create_order(body: OrderIn) -> OrderOut:
     if body.payment_method == "avax_escrow":
         raise HTTPException(400, "การจ่ายผ่าน AVAX escrow ยังไม่เปิดใช้งาน")
-    hit = await catalog.get_product(body.product_id)
-    if hit is None:
-        raise HTTPException(404, "ไม่พบสินค้า")
-    if body.quantity > hit.stock:
-        raise HTTPException(409, f"สินค้าเหลือ {hit.stock} ชิ้น")
+    lines = body.lines()
+    hits = await asyncio.gather(*(catalog.get_product(line.product_id) for line in lines))
+    for line, hit in zip(lines, hits):
+        if hit is None:
+            raise HTTPException(404, "ไม่พบสินค้า")
+        if line.quantity > hit.stock:
+            raise HTTPException(409, f"{hit.title} เหลือ {hit.stock} ชิ้น")
 
     def insert() -> OrderOut:
         with Session(engine) as session:
             user = session.get(AppUser, body.user_id)
             if user is None:
                 raise HTTPException(404, "ไม่พบผู้ใช้")
-            subtotal = round(hit.price * body.quantity, 2)
+            items = [
+                OrderItem(
+                    order_id="",
+                    product_id=hit.product_id,
+                    shop_id=hit.shop.shop_id,
+                    title=hit.title,
+                    unit_price=hit.price,
+                    quantity=line.quantity,
+                    subtotal=round(hit.price * line.quantity, 2),
+                )
+                for line, hit in zip(lines, hits)
+            ]
+            first = hits[0]
+            subtotal = round(sum(i.subtotal for i in items), 2)
             discount = round(subtotal * user.discount_percent / 100, 2)
             order = Order(
                 session_id=body.session_id,
                 user_id=user.id,
-                product_id=hit.product_id,
-                shop_id=hit.shop.shop_id,
-                title=hit.title,
-                quantity=body.quantity,
-                unit_price=hit.price,
+                product_id=first.product_id,
+                shop_id=first.shop.shop_id,
+                title=first.title if len(items) == 1 else f"{first.title} และอีก {len(items) - 1} รายการ",
+                quantity=sum(i.quantity for i in items),
+                unit_price=first.price,
                 subtotal=subtotal,
                 utag_discount_percent=user.discount_percent,
                 utag_discount=discount,
                 total=max(round(subtotal - discount, 2), MIN_TOTAL_THB),
-                delivery_date=hit.delivery_date,
+                # Everything ships together, so the order arrives with its slowest item.
+                delivery_date=max(h.delivery_date for h in hits),
                 address=user.address,
                 payment_method=body.payment_method,
                 status="pending_confirm",
             )
             session.add(order)
+            session.flush()
+            for item in items:
+                item.order_id = order.id
+                session.add(item)
             session.commit()
             session.refresh(order)
-            return _out(order, session.get(Shop, order.shop_id))
+            return _out(session, order)
 
     return await asyncio.to_thread(insert)
 
@@ -219,13 +306,15 @@ async def confirm_order(order_id: str) -> OrderOut:
     order = await asyncio.to_thread(_get, order_id)
     if order.status not in ("pending_confirm", "payment_failed"):
         raise HTTPException(409, "คำสั่งซื้อนี้ยืนยันไปแล้ว")
-    hit = await catalog.get_product(order.product_id)
-    if hit is None or hit.stock < order.quantity:
+    lines = await asyncio.to_thread(_lines, order_id)
+    hits = await asyncio.gather(*(catalog.get_product(product_id) for product_id, _ in lines))
+    if any(hit is None or hit.stock < quantity for hit, (_, quantity) in zip(hits, lines)):
         raise HTTPException(409, "สินค้าหมดระหว่างทำรายการ")
     email = f"{order.user_id}@example.com"  # demo users have no real email
     try:
         if order.payment_method == "card":
-            page = await payments.create_checkout(order.id, order.title, order.quantity, order.total, email)
+            name = order.title if len(lines) > 1 else f"{order.title} x {order.quantity}"
+            page = await payments.create_checkout(order.id, name, order.total, email)
             return await asyncio.to_thread(
                 _save, order.id, status="awaiting_payment", checkout_session_id=page.session_id, payment_url=page.url
             )
@@ -285,7 +374,9 @@ async def list_orders(shop_id: str | None = None, user_id: str | None = None) ->
     def load() -> list[Order]:
         query = select(Order).order_by(col(Order.created_at).desc())
         if shop_id:
-            query = query.where(Order.shop_id == shop_id)
+            # A shop sees every order with at least one of its products.
+            has_item = select(OrderItem.order_id).where(OrderItem.shop_id == shop_id)
+            query = query.where(or_(col(Order.shop_id) == shop_id, col(Order.id).in_(has_item)))
         if user_id:
             query = query.where(Order.user_id == user_id)
         with Session(engine) as session:
