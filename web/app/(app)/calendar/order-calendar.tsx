@@ -206,7 +206,7 @@ function Calendar({ today }: { today: string }) {
             ) : (
               <ul className="flex flex-col gap-2.5">
                 {upcoming.map((o) => (
-                  <Row key={o.order_id} o={o} today={today} onPick={() => pick(o)} />
+                  <Row key={o.order_id} o={o} today={today} showDate onPick={() => pick(o)} />
                 ))}
               </ul>
             )}
@@ -217,13 +217,14 @@ function Calendar({ today }: { today: string }) {
   );
 }
 
-function Row({ o, today, onPick }: { o: Order; today: string; onPick?: () => void }) {
+function Row({ o, today, showDate, onPick }: { o: Order; today: string; showDate?: boolean; onPick?: () => void }) {
   const body = (
     <>
       <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${DOT[o.status]}`} />
       <span className="flex min-w-0 flex-1 flex-col gap-0.5 text-left">
         <span className="line-clamp-2 text-[13.5px] font-medium leading-snug">{o.title}</span>
         <span className="text-xs text-muted">
+          {showDate && <>{shortDate(o.delivery_date)} · </>}
           {o.shop.name} · {t(STATUS_LABEL[o.status])} · {when(o, today)}
         </span>
       </span>
