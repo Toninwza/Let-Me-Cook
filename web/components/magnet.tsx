@@ -3,8 +3,8 @@ import { useId } from "react";
 /** `body` is one colour, or two colours to split the horseshoe left and right like the PULL logo. */
 export default function Magnet({
   size = 24,
-  tips = "#9AA39E",
-  body = "#F2A93B",
+  tips = "#FFFFFF",
+  body = ["#674DF1", "#FA81E9"],
   label,
 }: {
   size?: number;

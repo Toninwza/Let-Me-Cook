@@ -119,7 +119,7 @@ function Card({
           <span className="text-lg font-bold">{baht(item.price)}</span>
           {item.discount_percent > 0 && <s className="text-xs text-faint">{baht(item.original_price)}</s>}
         </div>
-        <p className="rounded-xl bg-basil-soft/70 px-2.5 py-2 text-[12.5px] leading-relaxed text-[#17402F]">
+        <p className="rounded-xl bg-basil-soft/70 px-2.5 py-2 text-[12.5px] leading-relaxed text-basil-dark">
           <span className="font-semibold">{t("ทำไม bot เลือก:")}</span> {item.reason}
         </p>
         <div className="mt-auto flex gap-2 pt-1">
@@ -261,7 +261,7 @@ function TruckIcon() {
 
 function StarIcon() {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="#C98A00" aria-hidden="true">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="#E04FCB" aria-hidden="true">
       <path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6-5.4-2.9-5.4 2.9 1.1-6L3.2 9.4l6.1-.8z" />
     </svg>
   );

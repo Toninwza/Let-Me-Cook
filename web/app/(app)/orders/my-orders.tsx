@@ -34,7 +34,7 @@ const TABS: { key: Tab; label: string }[] = [
 
 const TONE: Record<Order["status"], { text: string; strip: string }> = {
   pending_confirm: { text: "text-muted", strip: "bg-ground text-ink-2" },
-  awaiting_payment: { text: "text-saffron-ink", strip: "bg-[#FFF6E5] text-saffron-ink" },
+  awaiting_payment: { text: "text-saffron-ink", strip: "bg-[#FBEAFD] text-saffron-ink" },
   payment_failed: { text: "text-danger", strip: "bg-danger-soft text-danger" },
   paid: { text: "text-[#24365A]", strip: "bg-[#EEF2F8] text-[#24365A]" },
   shipped: { text: "text-basil-dark", strip: "bg-basil-soft text-basil-dark" },
@@ -110,7 +110,7 @@ export default function MyOrders() {
   const shown = (orders ?? []).filter((o) => tab === "all" || o.status === tab);
 
   return (
-    <div className="h-full overflow-y-auto bg-[#EEF0EC]">
+    <div className="h-full overflow-y-auto bg-[#EFEAF5]">
     <div className="mx-auto flex min-h-full w-full max-w-md flex-col md:max-w-2xl">
       <header className="sticky top-0 z-10 bg-paper">
         <div className="flex items-center gap-1.5 px-2 pb-1 pt-2.5 md:px-4 md:pt-4">
