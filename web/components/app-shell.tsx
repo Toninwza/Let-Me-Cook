@@ -140,7 +140,7 @@ function UserCard({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: 
           {!collapsed && (
             <span className="flex min-w-0 flex-1 flex-col leading-tight">
               <span className="text-[13.5px] font-semibold text-ink">{loading ? t("กำลังตรวจสอบ") : t("เข้าสู่ระบบ")}</span>
-              <span className="text-[11.5px] text-muted">{configured ? t("ตอนนี้ใช้เป็นผู้ใช้เดโม่") : t("ใช้เป็นผู้ใช้เดโม่")}</span>
+              <span className="text-[11.5px] text-muted">{configured ? t("ตอนนี้ใช้งานแบบลูกค้าทั่วไป") : t("ใช้งานแบบลูกค้าทั่วไป")}</span>
             </span>
           )}
           {collapsed && <Tip>{t("เข้าสู่ระบบ")}</Tip>}

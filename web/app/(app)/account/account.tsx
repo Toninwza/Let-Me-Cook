@@ -98,7 +98,7 @@ export default function Account() {
                 id="account-email"
                 readOnly
                 value={email ?? ""}
-                placeholder={t("ตอนนี้ใช้เป็นผู้ใช้เดโม่")}
+                placeholder={t("ตอนนี้ใช้งานแบบลูกค้าทั่วไป")}
                 className="h-[46px] w-full rounded-xl border-[1.5px] border-line bg-ground px-3.5 text-[15px] text-ink-2 outline-none"
               />
             </Field>

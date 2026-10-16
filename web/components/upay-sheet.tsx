@@ -210,7 +210,7 @@ export default function UPaySheet({
                   </div>
                 ) : (
                   <Row icon={<PinIcon />}>
-                    <div className="font-semibold">{me?.full_name || me?.display_name || t("ผู้ใช้เดโม่")}</div>
+                    <div className="font-semibold">{me?.full_name || me?.display_name || t("ลูกค้า")}</div>
                     {me && (
                       <div className="text-[13px] text-ink-2">
                         {me.address.line} {me.address.district} {me.address.province} {me.address.postcode}

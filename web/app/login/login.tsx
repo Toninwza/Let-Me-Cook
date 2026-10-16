@@ -156,7 +156,7 @@ export default function Login() {
 
           {!configured && (
             <p className="rounded-xl bg-saffron-soft px-3.5 py-2.5 text-[13px] text-saffron-ink">
-              {t("ยังไม่ได้ตั้งค่า Supabase ในเว็บ (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY) ตอนนี้ใช้แบบผู้ใช้เดโมได้")}
+              {t("ยังไม่ได้ตั้งค่า Supabase ในเว็บ (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY) ตอนนี้ใช้แบบลูกค้าทั่วไปได้")}
             </p>
           )}
 
@@ -276,7 +276,7 @@ export default function Login() {
 
           <div className="flex flex-col items-center gap-1">
             <Link href="/" className="flex min-h-10 items-center text-[13.5px] text-ink-2 underline hover:text-basil">
-              {t("ลองใช้แบบผู้ใช้เดโม่")}
+              {t("ลองใช้แบบลูกค้าทั่วไป")}
             </Link>
             <span className="text-[11.5px] text-faint">{t("การเข้าสู่ระบบดูแลโดย Supabase Auth")}</span>
           </div>
