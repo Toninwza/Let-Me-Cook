@@ -11,6 +11,11 @@ type CartValue = {
   items: CartItem[];
   count: number;
   total: number;
+  /** Lines the user wants to pay for. New lines start selected. */
+  selectedItems: CartItem[];
+  selectedTotal: number;
+  isSelected: (productId: string) => boolean;
+  toggleSelected: (productId: string) => void;
   add: (product: ProductHit) => void;
   setQuantity: (productId: string, quantity: number) => void;
   remove: (productId: string) => void;
@@ -27,6 +32,8 @@ const clamp = (q: number, stock: number) => Math.max(1, Math.min(q, MAX_QTY, Mat
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const itemsRef = useRef(items);
+  // Ticked off lines are remembered (not the ticked ones), so every new line is selected by default.
+  const [unselected, setUnselected] = useState<Set<string>>(new Set());
   // Edits sent but not answered yet: a stale GET must not overwrite the screen meanwhile.
   const pending = useRef(0);
 
@@ -108,18 +115,31 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     [mutate],
   );
 
-  const value = useMemo<CartValue>(
-    () => ({
+  const isSelected = useCallback((id: string) => !unselected.has(id), [unselected]);
+  const toggleSelected = useCallback((id: string) => {
+    setUnselected((cur) => {
+      const next = new Set(cur);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+  }, []);
+
+  const value = useMemo<CartValue>(() => {
+    const selectedItems = items.filter((i) => !unselected.has(i.product.product_id));
+    return {
       items,
+      selectedItems,
+      selectedTotal: Math.round(selectedItems.reduce((n, i) => n + i.product.price * i.quantity, 0) * 100) / 100,
+      isSelected,
+      toggleSelected,
       count: items.reduce((n, i) => n + i.quantity, 0),
       total: Math.round(items.reduce((n, i) => n + i.product.price * i.quantity, 0) * 100) / 100,
       add,
       setQuantity,
       remove,
       refresh,
-    }),
-    [items, add, setQuantity, remove, refresh],
-  );
+    };
+  }, [items, unselected, isSelected, toggleSelected, add, setQuantity, remove, refresh]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

@@ -7,7 +7,8 @@ import ProductThumb from "./product-thumb";
 import type { ProductHit } from "@/lib/api";
 
 export default function CartSheet({ onClose, onBuy }: { onClose: () => void; onBuy: (product: ProductHit, quantity: number) => void }) {
-  const { items, total, count, setQuantity, remove, refresh } = useCart();
+  const { items, count, selectedItems, selectedTotal, isSelected, toggleSelected, setQuantity, remove, refresh } = useCart();
+  const payable = selectedItems.filter((i) => i.product.stock > 0);
 
   // Prices and stock may have changed (or another tab edited the cart): read it again.
   useEffect(() => {
@@ -47,6 +48,13 @@ export default function CartSheet({ onClose, onBuy }: { onClose: () => void; onB
                 const out = p.stock <= 0;
                 return (
                   <li key={p.product_id} className="flex gap-3 py-3">
+                    <input
+                      type="checkbox"
+                      checked={isSelected(p.product_id)}
+                      onChange={() => toggleSelected(p.product_id)}
+                      aria-label={`เลือก ${p.title} เพื่อชำระเงิน`}
+                      className="mt-1 h-5 w-5 shrink-0 cursor-pointer accent-basil"
+                    />
                     <ProductThumb imageUrl={p.image_url} category={p.category} className="h-16 w-16 shrink-0 rounded-xl" />
                     <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                       <div className="flex items-start gap-2">
@@ -90,10 +98,19 @@ export default function CartSheet({ onClose, onBuy }: { onClose: () => void; onB
             </ul>
             <footer className="border-t border-line px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
               <div className="flex items-baseline justify-between">
-                <span className="text-sm text-muted">รวมในตะกร้า</span>
-                <span className="text-lg font-bold tabular-nums">{baht(total)}</span>
+                <span className="text-sm text-muted">รวมที่เลือก ({selectedItems.length} รายการ)</span>
+                <span className="text-lg font-bold tabular-nums">{baht(selectedTotal)}</span>
               </div>
-              <p className="mt-1 text-[12px] text-muted">ชำระทีละรายการ ส่วนลด U-Tag คิดตอนชำระ</p>
+              <button
+                disabled={payable.length === 0}
+                onClick={() => onBuy(payable[0].product, payable[0].quantity)}
+                className="mt-2.5 h-11 w-full rounded-xl bg-basil text-sm font-bold text-paper hover:bg-basil-dark disabled:opacity-40"
+              >
+                ชำระเงิน{payable.length > 0 && ` (${payable.length})`}
+              </button>
+              <p className="mt-1.5 text-[12px] text-muted">
+                {payable.length > 1 ? "ชำระทีละรายการตามลำดับ ทำรายการแรกเสร็จแล้วกดชำระเงินต่อ " : ""}ส่วนลด U-Tag คิดตอนชำระ
+              </p>
             </footer>
           </>
         )}
