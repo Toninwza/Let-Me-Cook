@@ -13,7 +13,7 @@ from sqlmodel import Session, col, select
 
 from app import catalog, payments
 from app.db import engine
-from app.models import AppUser, Order, Product, Shop, utcnow
+from app.models import AppUser, CartItem, Order, Product, Shop, utcnow
 from app.ratelimit import limit
 from app.schemas import Order as OrderOut
 from app.schemas import ShopInfo
@@ -124,6 +124,10 @@ def _mark_paid(order_id: str) -> None:
             # A new list (not .insert) so SQLAlchemy sees the JSON column changed.
             user.purchase_history = [bought, *user.purchase_history][:PURCHASE_HISTORY_KEEP]
             session.add(user)
+            # Bought: it leaves the cart.
+            cart_row = session.get(CartItem, (order.user_id, order.product_id))
+            if cart_row is not None:
+                session.delete(cart_row)
         session.commit()
 
 

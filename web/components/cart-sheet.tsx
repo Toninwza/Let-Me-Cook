@@ -1,25 +1,18 @@
 "use client";
 
 import { useEffect } from "react";
-import { listProducts } from "@/lib/api";
 import { useCart } from "@/lib/cart";
 import { baht, shortDate } from "@/lib/format";
 import ProductThumb from "./product-thumb";
 import type { ProductHit } from "@/lib/api";
 
 export default function CartSheet({ onClose, onBuy }: { onClose: () => void; onBuy: (product: ProductHit, quantity: number) => void }) {
-  const { items, total, count, setQuantity, remove, sync } = useCart();
+  const { items, total, count, setQuantity, remove, refresh } = useCart();
 
-  // Prices and stock may have changed since the item was added: refresh from the catalog.
+  // Prices and stock may have changed (or another tab edited the cart): read it again.
   useEffect(() => {
-    let live = true;
-    listProducts()
-      .then((all) => live && sync(all))
-      .catch(() => {});
-    return () => {
-      live = false;
-    };
-  }, [sync]);
+    refresh();
+  }, [refresh]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
