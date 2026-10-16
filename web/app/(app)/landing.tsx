@@ -1,0 +1,296 @@
+"use client";
+
+import { t } from "@/lib/i18n";
+
+import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { DEMO_USER_ID, ProductHit, listOrders, listProducts, transcribe } from "@/lib/api";
+import { MAX_RECORD_S, WARN_RECORD_S, useRecorder } from "@/lib/hooks";
+import { baht } from "@/lib/format";
+import { pickVaried } from "@/lib/pick";
+import { MenuButton, MobileLangToggle } from "@/components/app-shell";
+import Magnet from "@/components/magnet";
+import ProductThumb from "@/components/product-thumb";
+
+const EXAMPLES = ["หาเก้าอี้ทำงาน งบ 3,000", "หูฟังประชุม ส่งพรุ่งนี้", "ของขวัญวันเกิดแม่ งบ 1,500"];
+
+// Spots on the magnetic field, as % of the field width and px from its top.
+const SPOTS = [
+  { left: "6%", top: 110, rot: -7 },
+  { left: "57%", top: 60, rot: 5 },
+  { left: "71%", top: 320, rot: -3 },
+  { left: "62%", top: 600, rot: 4 },
+  { left: "12%", top: 610, rot: -4 },
+  { left: "0%", top: 370, rot: 3 },
+];
+
+export default function Landing() {
+  const router = useRouter();
+  const [text, setText] = useState("");
+  const [products, setProducts] = useState<ProductHit[]>([]);
+  const [active, setActive] = useState(0);
+  // Voice has four states. The recorder owns "recording"; the rest live here.
+  const [phase, setPhase] = useState<{ kind: "idle" } | { kind: "transcribing" } | { kind: "error"; message: string }>({ kind: "idle" });
+  const recorder = useRecorder((blob) => {
+    if (blob) sendVoice(blob); // reached the time limit: send what was said
+  });
+  const voice = recorder.recording ? "recording" : phase.kind;
+
+  useEffect(() => {
+    listProducts()
+      .then((all) => setProducts(pickVaried(all, SPOTS.length)))
+      .catch(() => {});
+    listOrders({ userId: DEMO_USER_ID })
+      .then((all) => setActive(all.filter((o) => o.status !== "delivered" && o.status !== "cancelled").length))
+      .catch(() => {});
+  }, []);
+
+  function start(q: string) {
+    const clean = q.trim();
+    router.push(clean ? `/chat?q=${encodeURIComponent(clean)}` : "/chat");
+  }
+
+  /** idle/error -> transcribing -> chat. Words already typed stay in front of what was said. */
+  async function sendVoice(blob: Blob) {
+    setPhase({ kind: "transcribing" });
+    try {
+      const heard = await transcribe(blob);
+      if (!heard.trim()) throw new Error("empty");
+      start(`${text} ${heard}`);
+    } catch {
+      setPhase({ kind: "error", message: t("ฟังเสียงไม่ออก ลองพูดใหม่อีกครั้งครับ") });
+    }
+  }
+
+  /** recording -> transcribing. Used by the mic button, the send button and Enter. */
+  async function stopAndSend() {
+    const blob = await recorder.stop();
+    if (blob) sendVoice(blob);
+    else setPhase({ kind: "error", message: t("สั้นเกินไป แตะไมค์แล้วพูดอีกครั้งครับ") });
+  }
+
+  /** idle/error -> recording */
+  async function startRecording() {
+    setPhase({ kind: "idle" });
+    try {
+      await recorder.start();
+    } catch {
+      setPhase({ kind: "error", message: t("เปิดไมค์ไม่ได้ อนุญาตไมค์ในเบราว์เซอร์ก่อนครับ") });
+    }
+  }
+
+  /** The send button and Enter: send the recording if one is running, else the typed text. */
+  function submit() {
+    if (voice === "recording") stopAndSend();
+    else if (voice !== "transcribing") start(text);
+  }
+
+  function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    submit();
+  }
+
+  return (
+    <div className="h-full overflow-x-hidden overflow-y-auto bg-[linear-gradient(160deg,#fbeafd_0%,#f4f3f1_45%,#ece8ff_100%)] text-night">
+      <div className="flex min-h-full flex-col">
+      <header className="flex items-center justify-between gap-3 px-2 py-3 sm:px-6 md:hidden">
+        <div className="flex items-center gap-1 md:hidden">
+          <MenuButton className="text-ink hover:bg-ground" />
+          <Link href="/" className="flex items-center gap-2">
+            <Magnet size={22} body={["#674DF1", "#FA81E9"]} tips="#FFFFFF" />
+            <span className="font-display text-lg font-extrabold">PULL</span>
+          </Link>
+        </div>
+        <MobileLangToggle className="mr-1" />
+      </header>
+
+      <div className="flex flex-1 flex-wrap items-stretch">
+        <main className="flex min-w-0 flex-[1_1_520px] flex-col justify-center gap-5 px-5 pb-14 pt-4 sm:px-8 md:pt-6 xl:pl-12">
+          <span className="flex w-fit items-center gap-2 rounded-full bg-iris-soft px-3 py-1 text-[13px] font-semibold text-iris-dark">
+            <span className="h-1.5 w-1.5 rounded-full bg-bubble" />
+            {t("AI shopping agent ในแชท")}
+          </span>
+          <h1 aria-label="Pull and serve everything you want" className="font-display text-[30px] text-night font-semibold leading-[1.1] tracking-[-0.025em] min-[400px]:text-[36px] sm:text-[44px] 2xl:text-[58px]">
+            <span aria-hidden="true">Pull and serve</span>
+            <br />
+            <span aria-hidden="true" className="inline-flex max-w-full flex-wrap items-center gap-x-3 sm:gap-x-3.5">
+              everything
+              <span className="mt-1.5 inline-flex">
+                <Magnet size={40} body={["#674DF1", "#FA81E9"]} tips="#FFFFFF" />
+              </span>
+              want
+            </span>
+          </h1>
+          <p className="max-w-[500px] text-[17px] text-night/70">{t("บอกครั้งเดียว bot ดึงของจากร้านบนแพลตฟอร์มมาให้ คัดเหลือ 3 ตัว แล้วจ่ายจบในแชท")}</p>
+
+          <form
+            onSubmit={onSubmit}
+            className="flex max-w-[560px] flex-col gap-2 rounded-[26px] border-[1.5px] border-orchid bg-paper py-4 pl-5 pr-3.5 shadow-[0_18px_50px_rgba(103,77,241,0.14)] focus-within:border-iris"
+          >
+            <label htmlFor="landing-prompt" className="text-[12.5px] font-semibold text-muted">
+              {t("บอก bot ว่าอยากได้อะไร")}
+            </label>
+            <textarea
+              id="landing-prompt"
+              rows={2}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  submit();
+                }
+              }}
+              maxLength={2000}
+              placeholder={t("เช่น หาเก้าอี้ทำงานหลังไม่ปวด งบ 3,000 ส่งก่อนวันอาทิตย์")}
+              className="resize-none bg-transparent text-[17px] leading-relaxed outline-none placeholder:text-faint"
+            />
+            <div className="flex items-center justify-between gap-2">
+              <VoiceStatus voice={voice} seconds={recorder.seconds} error={phase.kind === "error" ? phase.message : null} />
+              <div className="flex shrink-0 items-center gap-2">
+                {voice === "recording" && (
+                  <button
+                    type="button"
+                    onClick={() => recorder.cancel()}
+                    aria-label={t("ยกเลิกการอัด")}
+                    className="flex h-[46px] w-[46px] items-center justify-center rounded-full text-danger hover:bg-danger-soft"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+                    </svg>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={voice === "recording" ? stopAndSend : startRecording}
+                  disabled={voice === "transcribing"}
+                  aria-label={voice === "recording" ? t("หยุดอัดและส่งเสียง") : t("พูดกับ bot")}
+                  aria-pressed={voice === "recording"}
+                  className={`flex h-[46px] w-[46px] items-center justify-center rounded-full disabled:opacity-40 ${
+                    voice === "recording" ? "bg-danger text-paper" : "border border-orchid text-night hover:border-iris hover:bg-iris-soft hover:text-iris"
+                  }`}
+                >
+                  {voice === "recording" ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <rect x="6" y="6" width="12" height="12" rx="2.5" />
+                    </svg>
+                  ) : (
+                    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="9" y="3" width="6" height="11" rx="3" />
+                      <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+                    </svg>
+                  )}
+                </button>
+                <button
+                  type="submit"
+                  disabled={voice === "transcribing"}
+                  className="flex h-[46px] shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-iris pl-5 pr-4 font-semibold text-paper hover:bg-iris-dark disabled:opacity-40"
+                >
+                  {voice === "recording" ? t("ส่งเสียง") : t("เริ่มแชท")}
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M5 12h14M13 6l6 6-6 6" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <div className="flex max-w-[560px] flex-wrap gap-2">
+            {EXAMPLES.map((e) => (
+              <button
+                key={e}
+                onClick={() => start(t(e))}
+                className="min-h-10 rounded-full border border-orchid bg-paper px-3.5 text-[13.5px] text-night/80 hover:border-iris hover:text-iris"
+              >
+                {t(e)}
+              </button>
+            ))}
+          </div>
+
+          <Link
+            href="/orders"
+            className="flex w-fit items-center gap-2.5 rounded-2xl border border-orchid bg-paper py-2 pl-2.5 pr-4 text-[14px] font-medium text-night hover:border-iris"
+          >
+            <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-orchid-soft text-iris">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M6 8h12l-1 12H7L6 8zM9 8a3 3 0 0 1 6 0" />
+              </svg>
+            </span>
+            {active > 0 ? t("ติดตามออเดอร์ ({n} รายการกำลังดำเนินการ)", { n: active }) : t("ติดตามออเดอร์ของฉัน")}
+          </Link>
+        </main>
+
+        <section aria-label={t("สินค้าจากร้านบนแพลตฟอร์ม")} className="relative hidden min-h-[780px] flex-[1_1_560px] xl:block">
+          <svg width="760" height="760" viewBox="0 0 760 760" fill="none" aria-hidden="true" className="absolute left-1/2 top-[440px] -translate-x-1/2 -translate-y-1/2">
+            <circle cx="380" cy="380" r="150" stroke="#EA9FF1" strokeWidth="1.5" strokeDasharray="2 8" strokeLinecap="round" />
+            <circle cx="380" cy="380" r="240" stroke="#D9C7F8" strokeWidth="1.5" strokeDasharray="2 8" strokeLinecap="round" />
+            <circle cx="380" cy="380" r="330" stroke="#E4DBFA" strokeWidth="1.5" strokeDasharray="2 8" strokeLinecap="round" />
+            <circle cx="380" cy="380" r="96" fill="#FBEAFD" />
+          </svg>
+          <div className="absolute left-1/2 top-[440px] -translate-x-1/2 -translate-y-[42%]">
+            <Magnet size={150} body={["#674DF1", "#FA81E9"]} tips="#FFFFFF" label={t("โลโก้แม่เหล็ก PULL")} />
+          </div>
+
+          {products.map((p, i) => (
+            <Link
+              key={p.product_id}
+              href={`/chat?q=${encodeURIComponent(p.title)}`}
+              aria-label={t("ถาม bot เรื่อง {title} {price}", { title: p.title, price: baht(p.price) })}
+              className="absolute w-[168px] rounded-[18px] bg-paper shadow-[0_16px_40px_rgba(103,77,241,0.18)] transition-transform hover:z-10 hover:scale-105"
+              style={{ left: SPOTS[i].left, top: SPOTS[i].top, transform: `rotate(${SPOTS[i].rot}deg)` }}
+            >
+              <div className="relative">
+                <ProductThumb imageUrl={p.image_url} category={p.category} className="h-[104px] w-full rounded-t-[18px]" />
+                <span className="absolute -bottom-3 left-2.5 rounded-full bg-iris px-2.5 py-0.5 text-[12.5px] font-bold text-paper tabular-nums">{baht(p.price)}</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 pb-3 pt-5">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bubble text-[10.5px] font-bold text-paper">
+                  {p.shop.name.slice(0, 2).toUpperCase()}
+                </span>
+                <div className="min-w-0 leading-tight">
+                  <div className="truncate text-[12.5px] font-semibold">{p.title}</div>
+                  <div className="text-[11px] text-muted">{p.shop.name}</div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </section>
+      </div>
+      </div>
+    </div>
+  );
+}
+
+/** The line left of the buttons: one message per voice state. */
+function VoiceStatus({ voice, seconds, error }: { voice: "idle" | "recording" | "transcribing" | "error"; seconds: number; error: string | null }) {
+  switch (voice) {
+    case "recording":
+      return (
+        <span role="status" aria-live="polite" className="flex min-w-0 items-center gap-2 text-sm">
+          <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-danger" />
+          <span className={`font-semibold tabular-nums ${seconds >= WARN_RECORD_S ? "text-danger" : "text-ink"}`}>
+            {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}
+          </span>
+          <span className={`truncate text-xs ${seconds >= WARN_RECORD_S ? "font-semibold text-danger" : "text-muted"}`}>
+            {seconds >= WARN_RECORD_S ? t("ส่งอัตโนมัติใน {s} วิ", { s: MAX_RECORD_S - seconds }) : t("กำลังฟัง กดส่งได้เลย")}
+          </span>
+        </span>
+      );
+    case "transcribing":
+      return (
+        <span role="status" className="flex items-center gap-2 text-xs text-muted">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-bubble" />
+          {t("กำลังถอดเสียง")}
+        </span>
+      );
+    case "error":
+      return (
+        <span role="alert" className="text-xs text-danger">
+          {error}
+        </span>
+      );
+    default:
+      return <span className="text-xs text-faint">{t("พิมพ์ หรือแตะไมค์เพื่อพูด")}</span>;
+  }
+}

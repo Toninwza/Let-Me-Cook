@@ -9,6 +9,16 @@ class Settings(BaseSettings):
     # Comma-separated list of origins allowed to call the API directly.
     cors_origins: str = "http://localhost:3000"
 
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
+    # Use a test key (sk_test_...). Checkout returns 503 while this is empty.
+    stripe_secret_key: str = ""
+    # Public URL of the web app; Stripe Checkout sends the customer back to {web_url}/pay/done.
+    web_url: str = "http://localhost:3000"
+    elevenlabs_api_key: str = ""
+    # Bot voice. Default "Daniel - Steady Broadcaster" (male, matches the bot's "ครับ").
+    elevenlabs_voice_id: str = "onwK4e9ZLuTAKqWW03F9"
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
