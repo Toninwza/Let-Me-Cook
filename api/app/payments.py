@@ -61,7 +61,7 @@ class CheckoutPage:
     url: str
 
 
-async def create_checkout(order_id: str, title: str, quantity: int, amount_thb: float, email: str) -> CheckoutPage:
+async def create_checkout(order_id: str, name: str, amount_thb: float, email: str) -> CheckoutPage:
     """Stripe-hosted page for cards (Visa, Mastercard, JCB, Amex). Card data never touches our server.
     Which methods it offers comes from the Dashboard (newer API versions reject payment_method_types)."""
     done = f"{settings.web_url.rstrip('/')}/pay/done?order={order_id}"
@@ -70,11 +70,11 @@ async def create_checkout(order_id: str, title: str, quantity: int, amount_thb: 
             "mode": "payment",
             "line_items": [
                 {
-                    # One line for the order total: it already includes quantity and the U-Tag discount.
+                    # One line for the order total: it already includes every item, quantity and the U-Tag discount.
                     "price_data": {
                         "currency": "thb",
                         "unit_amount": round(amount_thb * 100),
-                        "product_data": {"name": f"{title} x {quantity}"},
+                        "product_data": {"name": name},
                     },
                     "quantity": 1,
                 }

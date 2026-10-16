@@ -129,3 +129,19 @@ class Order(SQLModel, table=True):
     paid_at: datetime | None = None
     shipped_at: datetime | None = None
     delivered_at: datetime | None = None
+
+
+class OrderItem(SQLModel, table=True):
+    """One product line of an order. The Order row keeps the totals; product_id / title / quantity
+    on Order describe the first line (and all units), so single-product readers keep working."""
+
+    __tablename__ = "order_item"
+
+    id: int | None = Field(default=None, primary_key=True)
+    order_id: str = Field(foreign_key="orders.id", index=True)
+    product_id: str = Field(foreign_key="product.id")
+    shop_id: str = Field(foreign_key="shop.id", index=True)
+    title: str
+    unit_price: float
+    quantity: int
+    subtotal: float
