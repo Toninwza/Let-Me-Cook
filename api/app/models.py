@@ -62,6 +62,9 @@ class AppUser(SQLModel, table=True):
 
     id: str = Field(primary_key=True)
     display_name: str
+    # Recipient for deliveries, typed by the user (account page, /welcome). Nullable, so startup adds them.
+    full_name: str | None = None
+    phone: str | None = None
     address: dict = Field(sa_column=Column(JSON, nullable=False))
     interests: list[str] = Field(default_factory=list, sa_column=Column(JSON, nullable=False))
     purchase_history: list[dict] = Field(default_factory=list, sa_column=Column(JSON, nullable=False))

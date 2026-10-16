@@ -18,7 +18,7 @@ from pydantic import Field
 from app import catalog
 from app.ai.llm import LLMOutput, generate
 from app.i18n import NAME, VOICE, Lang, detect, short_date, t
-from app.schemas import HistoryMessage, ProductHit, ProductOption, SearchResult, UserProfile
+from app.schemas import HistoryMessage, OrderBrief, ProductHit, ProductOption, SearchResult, UserProfile
 
 _FIXTURE = Path(__file__).parent / "fixtures" / "chat_stream.json"
 _TURNS: dict = json.loads(_FIXTURE.read_text(encoding="utf-8"))["turns"]
@@ -28,6 +28,7 @@ _WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
 _HISTORY_TURNS = 12
 _CANDIDATES = 10
 _MAX_OPTIONS = 3
+_ORDERS_SHOWN = 10
 _MAX_ALL = 12  # "see everything": more cards, reasons built from real numbers instead of the model
 _ALL_CANDIDATES = 60
 
@@ -36,10 +37,11 @@ _ALL_CANDIDATES = 60
 
 
 class Plan(LLMOutput):
-    action: Literal["search", "clarify", "checkout", "answer"] = Field(
+    action: Literal["search", "clarify", "checkout", "answer", "order_status"] = Field(
         description="search: find products. clarify: request too vague to search well. "
         "checkout: user picks a product shown before. answer: reply without searching "
-        "(greeting, comparing products already shown, question about them)."
+        "(greeting, comparing products already shown, question about them). "
+        "order_status: question about the user's own orders (status, delivery date, tracking)."
     )
     summary: str = Field(
         description="In the reply language, under 80 chars: what the user wants, e.g. "
@@ -73,7 +75,9 @@ class Plan(LLMOutput):
     choices: list[str] = Field(
         default_factory=list, description="For clarify: 2 to 4 short quick replies, in the reply language"
     )
-    reply: str | None = Field(default=None, description="For answer: 1 to 3 sentences, in the reply language")
+    reply: str | None = Field(
+        default=None, description="For answer and order_status: 1 to 3 sentences, in the reply language"
+    )
 
 
 class Pick(LLMOutput):
@@ -132,6 +136,12 @@ action. Reply in JSON only.
   matching product_id from the products shown last turn (numbered 1, 2, 3 and so on). Quantity
   from the message, default 1.
 - Comparing or asking about products already shown -> "answer", using their data.
+- Asking about their own orders ("สถานะออเดอร์เป็นไงบ้าง", "ของถึงเมื่อไหร่", "เลขพัสดุอะไร",
+  "where is my order?", "when does it arrive?") -> "order_status". The reply answers right away
+  from "your orders" (newest first): what it is, its status, the delivery date, and the tracking
+  number when there is one. Never ask whether they want to know the status: they just asked. With
+  several orders, cover the newest few. With no orders, say there are none yet and offer to help
+  find a product. A "yes" after the bot asked about orders also means "order_status".
 - Resolve relative dates ("พรุ่งนี้", "by Sunday", "this week") from today's date.
 - "งบ 3000" or "under 3000" means max_price 3000. Prices are in baht.
 - Keywords are matched as substrings of Thai product titles and a product needs only one match,
@@ -184,6 +194,41 @@ def _fmt_profile(user: UserProfile) -> str:
         f"interests: {', '.join(user.interests) or '-'}; bought before: {bought}; "
         f"U-Tag discount at checkout: {user.discount_percent}%"
     )
+
+
+_STATUS_MEANING = {
+    "pending_confirm": "not confirmed yet",
+    "awaiting_payment": "waiting for payment",
+    "payment_failed": "payment failed, can pay again",
+    "paid": "paid, the shop is preparing it",
+    "shipped": "shipped, on the way",
+    "delivered": "delivered",
+    "cancelled": "cancelled",
+}
+
+
+def _fmt_orders(orders: list[OrderBrief]) -> str:
+    lines = [
+        f"- {o.title} | {_STATUS_MEANING[o.status]} | arrives {o.delivery_date.isoformat()} | "
+        f"tracking {o.tracking_number or '-'} | shop {o.shop_name} | total {_baht(o.total)} baht | "
+        f"ordered {o.created_at.date().isoformat()}"
+        for o in orders[:_ORDERS_SHOWN]
+    ]
+    return "\n".join(lines) or "(no orders yet)"
+
+
+def _orders_text(orders: list[OrderBrief], lang: Lang) -> str:
+    """Plain answer from the data, used when the model returns order_status without a reply."""
+    if not orders:
+        return t(lang, "no_orders")
+    lines = []
+    for o in orders[:3]:
+        status = t(lang, f"status_{o.status}")
+        line = t(lang, "order_line", title=o.title, status=status, date=short_date(o.delivery_date, lang))
+        if o.tracking_number:
+            line += t(lang, "tracking", number=o.tracking_number)
+        lines.append(line)
+    return "\n".join(lines)
 
 
 def _fmt_history(history: list[HistoryMessage]) -> str:
@@ -270,6 +315,7 @@ async def run_agent(
     user_profile: UserProfile,
     history: list[HistoryMessage],
     today: date,
+    orders: list[OrderBrief] | None = None,
 ) -> AsyncIterator[dict]:
     replay = text[1:].split(maxsplit=1)[0] if text.startswith("/") and len(text) > 1 else ""
     if replay in _TURNS:
@@ -294,6 +340,7 @@ async def run_agent(
             f"{reply_in}\ntoday: {today.isoformat()} ({_WEEKDAYS[today.weekday()]})\n"
             f"categories: {json.dumps(categories, ensure_ascii=False)}\n"
             f"user profile: {_fmt_profile(user_profile)}\n"
+            f"your orders (newest first):\n{_fmt_orders(orders or [])}\n"
             f"products shown last turn:\n"
             + ("\n".join(_fmt_product(i + 1, p) for i, p in enumerate(shown)) or "(none)")
             + f"\n\nchat so far:\n{_fmt_history(history)}\n\nlatest user message: {text}"
@@ -304,6 +351,11 @@ async def run_agent(
 
         if plan.action == "clarify" and plan.question:
             yield {"type": "clarify", "question": plan.question, "choices": plan.choices[:4]}
+            return
+
+        if plan.action == "order_status":
+            for chunk in _chunks(plan.reply or _orders_text(orders or [], lang)):
+                yield {"type": "message_delta", "text": chunk}
             return
 
         if plan.action == "answer" and plan.reply:

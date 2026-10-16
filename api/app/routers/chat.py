@@ -7,15 +7,15 @@ from datetime import date, datetime
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from app import catalog
 from app.ai import run_agent
 from app.db import engine
 from app.i18n import detect, t
-from app.models import AppUser, ChatSession, Message
+from app.models import AppUser, ChatSession, Message, Order, Shop
 from app.ratelimit import limit
-from app.schemas import HistoryMessage, UserProfile
+from app.schemas import HistoryMessage, OrderBrief, UserProfile
 
 log = logging.getLogger(__name__)
 router = APIRouter(tags=["chat"])
@@ -41,6 +41,8 @@ def profile_of(user: AppUser) -> UserProfile:
     return UserProfile(
         user_id=user.id,
         display_name=user.display_name,
+        full_name=user.full_name,
+        phone=user.phone,
         address=user.address,
         interests=user.interests,
         purchase_history=user.purchase_history,
@@ -78,17 +80,42 @@ def list_messages(session_id: str) -> list[HistoryMessage]:
         return _history(session, session_id)
 
 
-def _turn_context(session_id: str, text: str) -> tuple[UserProfile, list[HistoryMessage]]:
-    """Loads profile and history, then stores the user's message (history excludes it)."""
+def _orders(session: Session, user_id: str) -> list[OrderBrief]:
+    """The user's newest orders, so the bot can answer "where is my order?"."""
+    rows = session.exec(
+        select(Order, Shop)
+        .join(Shop, col(Shop.id) == col(Order.shop_id))
+        .where(Order.user_id == user_id)
+        .order_by(col(Order.created_at).desc())
+        .limit(10)
+    ).all()
+    return [
+        OrderBrief(
+            order_id=o.id,
+            title=o.title,
+            status=o.status,
+            total=o.total,
+            delivery_date=o.delivery_date,
+            tracking_number=o.tracking_number,
+            shop_name=shop.name,
+            created_at=o.created_at,
+        )
+        for o, shop in rows
+    ]
+
+
+def _turn_context(session_id: str, text: str) -> tuple[UserProfile, list[HistoryMessage], list[OrderBrief]]:
+    """Loads profile, history and orders, then stores the user's message (history excludes it)."""
     with Session(engine) as session:
         chat = session.get(ChatSession, session_id)
         if chat is None:
             raise HTTPException(404, "session not found")
         profile = profile_of(session.get(AppUser, chat.user_id))
         history = _history(session, session_id)
+        orders = _orders(session, chat.user_id)
         session.add(Message(session_id=session_id, role="user", text=text))
         session.commit()
-        return profile, history
+        return profile, history, orders
 
 
 def _save_bot_turn(session_id: str, text: str, option_ids: list[str]) -> None:
@@ -110,13 +137,15 @@ def _sse(event: dict) -> str:
     return f"event: {event.get('type', 'message')}\ndata: {data}\n\n"
 
 
-async def _stream(session_id: str, text: str, profile: UserProfile, history: list[HistoryMessage]):
+async def _stream(
+    session_id: str, text: str, profile: UserProfile, history: list[HistoryMessage], orders: list[OrderBrief]
+):
     bot_text: list[str] = []
     option_ids: list[str] = []
     lang = detect(text)
     try:
         async with asyncio.timeout(AGENT_TIMEOUT_S):
-            agent = run_agent(session_id, text, profile, history, catalog.today())
+            agent = run_agent(session_id, text, profile, history, catalog.today(), orders)
             async with aclosing(agent) as events:
                 async for event in events:
                     kind = event.get("type")
@@ -148,9 +177,9 @@ async def post_message(session_id: str, body: MessageIn) -> StreamingResponse:
     text = body.text.strip()
     if not text:
         raise HTTPException(422, "text is empty")
-    profile, history = await asyncio.to_thread(_turn_context, session_id, text)
+    profile, history, orders = await asyncio.to_thread(_turn_context, session_id, text)
     return StreamingResponse(
-        _stream(session_id, text, profile, history),
+        _stream(session_id, text, profile, history, orders),
         media_type="text/event-stream",
         # no-transform: stops proxies (Next rewrite, Cloud Run front end) from compressing/buffering.
         headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"},

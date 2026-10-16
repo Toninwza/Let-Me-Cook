@@ -24,6 +24,8 @@ class PastPurchase(BaseModel):
 class UserProfile(BaseModel):
     user_id: str
     display_name: str
+    full_name: str | None = None
+    phone: str | None = None
     address: Address
     interests: list[str] = Field(default_factory=list)
     purchase_history: list[PastPurchase] = Field(default_factory=list)
@@ -87,6 +89,19 @@ OrderStatus = Literal[
     "delivered",
     "cancelled",
 ]
+
+
+class OrderBrief(BaseModel):
+    """What the bot knows about one of the user's orders, to answer "where is my order?"."""
+
+    order_id: str
+    title: str
+    status: OrderStatus
+    total: float
+    delivery_date: date
+    tracking_number: str | None
+    shop_name: str
+    created_at: datetime
 
 
 class OrderLine(BaseModel):
