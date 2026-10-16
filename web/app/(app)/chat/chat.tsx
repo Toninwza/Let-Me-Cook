@@ -8,7 +8,9 @@ import { MAX_RECORD_S, WARN_RECORD_S, useBotVoice, useRecorder } from "@/lib/hoo
 import Magnet from "@/components/magnet";
 import { MenuButton } from "@/components/app-shell";
 import OrderCard from "@/components/order-card";
-import ProductWidget from "@/components/product-widget";
+import CartSheet from "@/components/cart-sheet";
+import ProductWidget, { CartIcon } from "@/components/product-widget";
+import { useCart } from "@/lib/cart";
 import StepsPanel, { Step } from "@/components/steps-panel";
 import UPaySheet, { CheckoutProduct } from "@/components/upay-sheet";
 
@@ -74,6 +76,9 @@ export default function Chat() {
   const voiceOnRef = useRef(false);
   const [micError, setMicError] = useState<string | null>(null);
   const [checkout, setCheckout] = useState<CheckoutProduct | null>(null);
+  const [checkoutQty, setCheckoutQty] = useState(1);
+  const [cartOpen, setCartOpen] = useState(false);
+  const cart = useCart();
   const started = useRef(false);
   const sentInitial = useRef(false);
   const bottom = useRef<HTMLDivElement>(null);
@@ -107,7 +112,10 @@ export default function Chat() {
       const hit = all.find((p) => p.product_id === productId);
       if (hit) product = { ...hit, reason: "" };
     }
-    if (product) setCheckout(product);
+    if (product) {
+      setCheckoutQty(1);
+      setCheckout(product);
+    }
   }, []);
 
   const send = useCallback(
@@ -299,6 +307,12 @@ export default function Chat() {
             {voiceOn ? <path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" /> : <path d="M17 9l5 6M22 9l-5 6" />}
           </svg>
         </button>
+        <button onClick={() => setCartOpen(true)} aria-label={`ตะกร้า ${cart.count} ชิ้น`} className="relative flex h-11 w-11 items-center justify-center rounded-xl text-ink hover:bg-ground">
+          <CartIcon size={22} />
+          {cart.count > 0 && (
+            <span className="absolute right-0.5 top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-basil px-1 text-[10.5px] font-bold text-paper">{cart.count}</span>
+          )}
+        </button>
         <Link href="/orders" aria-label="ออเดอร์ของฉัน" className="flex h-11 w-11 items-center justify-center rounded-xl text-ink hover:bg-ground">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M6 8h12l-1 12H7L6 8z" />
@@ -366,7 +380,10 @@ export default function Chat() {
               </div>
             );
           if (turn.role === "order") return <OrderCard key={i} initial={turn.order} />;
-          return <BotMessage key={i} turn={turn} disabled={busy} onReply={send} onBuy={(p) => setCheckout(p)} />;
+          return <BotMessage key={i} turn={turn} disabled={busy} onReply={send} onBuy={(p) => {
+            setCheckoutQty(1);
+            setCheckout(p);
+          }} />;
         })}
         <div ref={bottom} />
         </div>
@@ -469,13 +486,29 @@ export default function Chat() {
         </div>
       </form>
 
+      {cartOpen && (
+        <CartSheet
+          onClose={() => setCartOpen(false)}
+          onBuy={(p, q) => {
+            setCartOpen(false);
+            setCheckoutQty(q);
+            setCheckout({ ...p, reason: "" } as CheckoutProduct);
+          }}
+        />
+      )}
+
       {checkout && (
         <UPaySheet
+          key={checkout.product_id}
           product={checkout}
+          initialQty={checkoutQty}
           user={user}
           sessionId={sessionId}
           onClose={() => setCheckout(null)}
-          onPaid={(order) => setTurns((t) => [...t, { role: "order", order }])}
+          onPaid={(order) => {
+            cart.remove(order.product_id);
+            setTurns((t) => [...t, { role: "order", order }]);
+          }}
         />
       )}
     </div>
