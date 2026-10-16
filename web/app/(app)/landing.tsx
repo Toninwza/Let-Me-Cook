@@ -9,7 +9,7 @@ import { DEMO_USER_ID, ProductHit, listOrders, listProducts, transcribe } from "
 import { MAX_RECORD_S, WARN_RECORD_S, useRecorder } from "@/lib/hooks";
 import { baht } from "@/lib/format";
 import { pickVaried } from "@/lib/pick";
-import { MenuButton } from "@/components/app-shell";
+import { MenuButton, MobileLangToggle } from "@/components/app-shell";
 import Magnet from "@/components/magnet";
 import ProductThumb from "@/components/product-thumb";
 
@@ -102,6 +102,7 @@ export default function Landing() {
             <span className="font-display text-lg font-extrabold">PULL</span>
           </Link>
         </div>
+        <MobileLangToggle className="mr-1" />
       </header>
 
       <div className="flex flex-1 flex-wrap items-stretch">

@@ -16,7 +16,7 @@ import {
   setOrderStatus,
 } from "@/lib/api";
 import { baht, shortDate } from "@/lib/format";
-import { MenuButton } from "@/components/app-shell";
+import { MenuButton, MobileLangToggle } from "@/components/app-shell";
 import { STATUS_LABEL } from "@/components/order-card";
 import OrderSteps from "@/components/order-steps";
 import ProductThumb from "@/components/product-thumb";
@@ -116,6 +116,7 @@ export default function MyOrders() {
         <div className="flex items-center gap-1.5 px-2 pb-1 pt-2.5 md:px-4 md:pt-4">
           <MenuButton className="text-ink hover:bg-ground" />
           <h1 className="flex-1 text-lg font-bold">{t("ออเดอร์ของฉัน")}</h1>
+          <MobileLangToggle className="mr-1" />
         </div>
         <div role="tablist" aria-label={t("สถานะออเดอร์")} className="no-scrollbar flex gap-1 overflow-x-auto border-b border-line px-2">
           {TABS.map((tb) => (

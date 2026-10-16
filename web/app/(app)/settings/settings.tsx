@@ -1,7 +1,7 @@
 "use client";
 
 import { Lang, t, useLang } from "@/lib/i18n";
-import { MenuButton } from "@/components/app-shell";
+import { MenuButton, MobileLangToggle } from "@/components/app-shell";
 
 // Each language is named in itself, so it stays readable whichever language is on.
 const LANGUAGES: { key: Lang; name: string; sample: string }[] = [
@@ -15,7 +15,8 @@ export default function Settings() {
     <div className="h-full overflow-y-auto bg-ground">
       <header className="sticky top-0 z-10 flex h-[60px] items-center gap-1 border-b border-line bg-paper px-2 md:h-[68px] md:px-8">
         <MenuButton className="text-ink hover:bg-ground" />
-        <h1 className="text-base font-bold md:text-lg">{t("ตั้งค่า")}</h1>
+        <h1 className="flex-1 text-base font-bold md:text-lg">{t("ตั้งค่า")}</h1>
+        <MobileLangToggle className="mr-1" />
       </header>
 
       <div className="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4 py-4 md:px-8 md:py-7">

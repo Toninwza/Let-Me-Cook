@@ -7,7 +7,7 @@ import Link from "next/link";
 import { ApiError, DEMO_USER_ID, UserProfile, getUser, updateUser } from "@/lib/api";
 import { addressError, contactError, contactPayload, normalizeAddress, normalizeContact, phoneDigits } from "@/lib/address";
 import { useAuth } from "@/components/auth-provider";
-import { MenuButton } from "@/components/app-shell";
+import { MenuButton, MobileLangToggle } from "@/components/app-shell";
 import AddressFields, { Field } from "@/components/address-fields";
 import RecipientFields from "@/components/recipient-fields";
 
@@ -65,7 +65,8 @@ export default function Account() {
     <div className="h-full overflow-y-auto bg-ground">
       <header className="sticky top-0 z-10 flex h-[60px] items-center gap-1 border-b border-line bg-paper px-2 md:h-[68px] md:px-8">
         <MenuButton className="text-ink hover:bg-ground" />
-        <h1 className="text-base font-bold md:text-lg">{t("ข้อมูลของฉัน")}</h1>
+        <h1 className="flex-1 text-base font-bold md:text-lg">{t("ข้อมูลของฉัน")}</h1>
+        <MobileLangToggle className="mr-1" />
       </header>
 
       <div className="mx-auto flex w-full max-w-[1000px] flex-col gap-6 px-4 py-4 md:px-8 md:py-7 lg:flex-row lg:items-start">

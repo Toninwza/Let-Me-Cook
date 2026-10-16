@@ -8,7 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { AgentEvent, Order, ProductOption, UserProfile, createSession, listProducts, sendMessage, transcribe } from "@/lib/api";
 import { MAX_RECORD_S, WARN_RECORD_S, useBotVoice, useRecorder } from "@/lib/hooks";
 import Magnet from "@/components/magnet";
-import { MenuButton } from "@/components/app-shell";
+import { MenuButton, MobileLangToggle } from "@/components/app-shell";
 import OrderCard from "@/components/order-card";
 import CartSheet from "@/components/cart-sheet";
 import ProductWidget, { CartIcon } from "@/components/product-widget";
@@ -288,11 +288,12 @@ export default function Chat() {
         <MenuButton className="text-ink hover:bg-ground" />
         <div className="min-w-0 flex-1 md:flex md:items-center md:gap-3">
           <div className="text-[15px] font-semibold md:text-lg md:font-bold">Chatbot</div>
-          <div className="flex items-center gap-1.5 text-xs text-muted">
+          <div className="hidden items-center gap-1.5 text-xs text-muted min-[420px]:flex">
             <span className="h-1.5 w-1.5 rounded-full bg-basil" />
             {t("ค้นจากร้านบนแพลตฟอร์ม")}
           </div>
         </div>
+        <MobileLangToggle />
         <button
           onClick={() => {
             const next = !voiceOn;

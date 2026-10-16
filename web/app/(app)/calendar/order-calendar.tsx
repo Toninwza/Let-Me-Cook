@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { DEMO_USER_ID, Order, listOrders } from "@/lib/api";
 import { baht, shortDate } from "@/lib/format";
-import { MenuButton } from "@/components/app-shell";
+import { MenuButton, MobileLangToggle } from "@/components/app-shell";
 import { STATUS_LABEL } from "@/components/order-card";
 
 /** Orders that have a delivery to wait for. Unpaid, failed and cancelled ones have no real date yet. */
@@ -123,7 +123,8 @@ function Calendar({ today }: { today: string }) {
     <div className="h-full overflow-y-auto bg-ground">
       <header className="sticky top-0 z-10 flex h-[60px] items-center gap-1 border-b border-line bg-paper px-2 md:h-[68px] md:px-8">
         <MenuButton className="text-ink hover:bg-ground" />
-        <h1 className="text-base font-bold md:text-lg">{t("ปฏิทินสั่งซื้อ")}</h1>
+        <h1 className="flex-1 text-base font-bold md:text-lg">{t("ปฏิทินสั่งซื้อ")}</h1>
+        <MobileLangToggle className="mr-1" />
       </header>
 
       <div className="mx-auto flex w-full max-w-[1000px] flex-col gap-4 px-4 py-4 md:px-8 md:py-7 lg:flex-row lg:items-start">

@@ -107,7 +107,9 @@ function SidebarBody({ collapsed, onToggle, onNavigate }: { collapsed: boolean; 
       </nav>
 
       <div className="flex-1" />
-      <LangToggle collapsed={collapsed} />
+      <div className={collapsed ? "flex justify-center px-3" : "px-3"}>
+        <LangToggle collapsed={collapsed} />
+      </div>
       <UserCard collapsed={collapsed} onNavigate={onNavigate} />
     </>
   );
@@ -121,31 +123,34 @@ function Tip({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Small two-part box: TH | EN. Same choice as Settings, kept in the menu so it is one tap away. */
-function LangToggle({ collapsed }: { collapsed: boolean }) {
+/** Small two-part box: TH | EN. Same choice as Settings. */
+export function LangToggle({ collapsed = false, compact = false, className = "" }: { collapsed?: boolean; compact?: boolean; className?: string }) {
   const { lang, setLang } = useLang();
   return (
-    <div className={collapsed ? "flex justify-center px-3" : "px-3"}>
-      <div
-        role="radiogroup"
-        aria-label={t("ภาษา")}
-        className={`overflow-hidden rounded-xl border border-line-strong bg-paper text-[12.5px] font-bold ${collapsed ? "flex w-11 flex-col" : "flex w-fit"}`}
-      >
-        {(["th", "en"] as Lang[]).map((k) => (
-          <button
-            key={k}
-            type="button"
-            role="radio"
-            aria-checked={lang === k}
-            onClick={() => setLang(k)}
-            className={`h-8 min-w-11 px-3 ${lang === k ? "bg-basil text-paper" : "text-ink-2 hover:bg-ground"}`}
-          >
-            {k.toUpperCase()}
-          </button>
-        ))}
-      </div>
+    <div
+      role="radiogroup"
+      aria-label={t("ภาษา")}
+      className={`overflow-hidden rounded-xl border border-line-strong bg-paper font-bold ${compact ? "text-[12px]" : "text-[12.5px]"} ${collapsed ? "flex w-11 flex-col" : "flex w-fit"} ${className}`}
+    >
+      {(["th", "en"] as Lang[]).map((k) => (
+        <button
+          key={k}
+          type="button"
+          role="radio"
+          aria-checked={lang === k}
+          onClick={() => setLang(k)}
+          className={`${compact ? "h-8 min-w-9 px-2" : "h-8 min-w-11 px-3"} ${lang === k ? "bg-basil text-paper" : "text-ink-2 hover:bg-ground"}`}
+        >
+          {k.toUpperCase()}
+        </button>
+      ))}
     </div>
   );
+}
+
+/** The toggle in the mobile page header, top right, where a demo audience sees it first. */
+export function MobileLangToggle({ className = "" }: { className?: string }) {
+  return <LangToggle compact className={`md:hidden ${className}`} />;
 }
 
 function UserCard({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
