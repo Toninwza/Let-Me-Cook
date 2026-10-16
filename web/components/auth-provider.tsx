@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { DEMO_USER_ID, getUser } from "@/lib/api";
 
 type AuthState = {
   /** False when NEXT_PUBLIC_SUPABASE_* are not set: the app runs as the demo user. */
@@ -12,6 +13,8 @@ type AuthState = {
   session: Session | null;
   name: string | null;
   email: string | null;
+  /** Update the shown name right after the user saves a new nickname. */
+  setProfileName: (name: string) => void;
   signOut: () => Promise<void>;
 };
 
@@ -21,6 +24,7 @@ const AuthContext = createContext<AuthState>({
   session: null,
   name: null,
   email: null,
+  setProfileName: () => {},
   signOut: async () => {},
 });
 
@@ -30,6 +34,8 @@ export function useAuth() {
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
+  // The nickname the user typed in /welcome or /account (stored by the API). Wins over the sign-up name.
+  const [profileName, setProfileName] = useState<string | null>(null);
   const [loading, setLoading] = useState(Boolean(supabase));
 
   useEffect(() => {
@@ -42,6 +48,19 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     return () => data.subscription.unsubscribe();
   }, []);
 
+  const signedIn = Boolean(session);
+  useEffect(() => {
+    if (!signedIn) return;
+    let live = true;
+    getUser(DEMO_USER_ID).then(
+      (u) => live && setProfileName(u.display_name?.trim() || null),
+      () => {},
+    );
+    return () => {
+      live = false;
+    };
+  }, [signedIn]);
+
   const value = useMemo<AuthState>(() => {
     const user = session?.user;
     const metaName = typeof user?.user_metadata?.name === "string" ? user.user_metadata.name.trim() : "";
@@ -49,13 +68,14 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       configured: Boolean(supabase),
       loading,
       session,
-      name: metaName || user?.email?.split("@")[0] || null,
+      name: profileName || metaName || user?.email?.split("@")[0] || null,
       email: user?.email ?? null,
+      setProfileName,
       signOut: async () => {
         await supabase?.auth.signOut();
       },
     };
-  }, [session, loading]);
+  }, [session, loading, profileName]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
