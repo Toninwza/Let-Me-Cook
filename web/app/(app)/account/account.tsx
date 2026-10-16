@@ -3,16 +3,18 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ApiError, DEMO_USER_ID, UserProfile, getUser, updateUser } from "@/lib/api";
-import { addressError, normalizeAddress } from "@/lib/address";
+import { addressError, contactError, contactPayload, normalizeAddress, normalizeContact, phoneDigits } from "@/lib/address";
 import { useAuth } from "@/components/auth-provider";
 import { MenuButton } from "@/components/app-shell";
 import AddressFields, { Field } from "@/components/address-fields";
+import RecipientFields from "@/components/recipient-fields";
 
 export default function Account() {
   const { session, email } = useAuth();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [name, setName] = useState("");
   const [address, setAddress] = useState(normalizeAddress(null));
+  const [contact, setContact] = useState(normalizeContact(null));
   const [loadError, setLoadError] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +27,7 @@ export default function Account() {
           setUser(u);
           setName(u.display_name);
           setAddress(normalizeAddress(u.address));
+          setContact(normalizeContact(u));
         },
         () => setLoadError(true),
       );
@@ -33,7 +36,7 @@ export default function Account() {
   }, []);
 
   async function save() {
-    const problem = !name.trim() ? "กรอกชื่อที่แสดง" : addressError(address);
+    const problem = !name.trim() ? "กรอกชื่อที่แสดง" : contactError(contact) ?? addressError(address);
     if (problem) {
       setError(problem);
       setSaved(false);
@@ -42,7 +45,7 @@ export default function Account() {
     setBusy(true);
     setError(null);
     try {
-      const next = await updateUser(DEMO_USER_ID, { display_name: name.trim(), address: normalizeAddress(address) });
+      const next = await updateUser(DEMO_USER_ID, { display_name: name.trim(), ...contactPayload(contact), address: normalizeAddress(address) });
       setUser(next);
       setSaved(true);
     } catch (e) {
@@ -104,6 +107,17 @@ export default function Account() {
           </section>
 
           <section className="flex flex-col gap-3.5 rounded-2xl bg-paper p-4 md:rounded-[18px] md:p-5">
+            <h2 className="text-[15px] font-bold">ผู้รับสินค้า</h2>
+            <RecipientFields
+              value={contact}
+              onChange={(next) => {
+                setContact(next);
+                setSaved(false);
+              }}
+            />
+          </section>
+
+          <section className="flex flex-col gap-3.5 rounded-2xl bg-paper p-4 md:rounded-[18px] md:p-5">
             <div>
               <h2 className="text-[15px] font-bold">ที่อยู่จัดส่ง</h2>
               <p className="text-[12.5px] text-muted">ใช้กับออเดอร์ถัดไป ออเดอร์ที่สั่งไปแล้วไม่เปลี่ยน</p>
@@ -142,8 +156,9 @@ export default function Account() {
                 <circle cx="12" cy="9.5" r="2.5" />
               </svg>
               <div className="flex min-w-0 flex-col">
-                <div className="font-semibold">{name.trim() || "ชื่อของคุณ"}</div>
+                <div className="font-semibold">{contact.full_name.trim() || name.trim() || "ชื่อของคุณ"}</div>
                 <div className="text-[13px] text-ink-2">{preview || "ยังไม่ได้กรอกที่อยู่"}</div>
+                {phoneDigits(contact.phone) && <div className="text-[13px] tabular-nums text-ink-2">โทร {contact.phone.trim()}</div>}
               </div>
             </div>
           </div>

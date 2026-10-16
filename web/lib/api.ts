@@ -43,6 +43,9 @@ export type PastPurchase = {
 export type UserProfile = {
   user_id: string;
   display_name: string;
+  /** Recipient name and phone. Absent until the API has the fields (see docs/handoff.md). */
+  full_name?: string | null;
+  phone?: string | null;
   address: Address;
   interests: string[];
   purchase_history: PastPurchase[];
@@ -143,7 +146,7 @@ export const createSession = (userId?: string) =>
 export const getUser = (id: string) => call<UserProfile>(`/api/users/${id}`);
 
 /** Needs PATCH /api/users/{id} on the API (see docs/handoff.md). Every field is optional. */
-export const updateUser = (id: string, body: { display_name?: string; address?: Address }) =>
+export const updateUser = (id: string, body: { display_name?: string; full_name?: string; phone?: string; address?: Address }) =>
   call<UserProfile>(`/api/users/${id}`, { method: "PATCH", body: JSON.stringify(body) });
 
 export const listProducts = (shopId?: string) =>

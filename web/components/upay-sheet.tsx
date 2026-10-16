@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ApiError, DEMO_USER_ID, Order, PaymentMethod, ShopInfo, UserProfile, cancelOrder, confirmOrder, createOrder, getOrder, updateUser } from "@/lib/api";
-import { addressError, normalizeAddress } from "@/lib/address";
+import { addressError, apiHasContact, contactError, contactPayload, normalizeAddress, normalizeContact } from "@/lib/address";
 import { baht, shortDate } from "@/lib/format";
 import AddressFields from "./address-fields";
+import RecipientFields from "./recipient-fields";
 import ProductThumb from "./product-thumb";
 
 const METHODS: { key: PaymentMethod; label: string; hint: string; badge: string; badgeCls: string }[] = [
@@ -51,8 +52,11 @@ export default function UPaySheet({
   // First checkout without an address: collect it here, then keep it on the account.
   const [savedUser, setSavedUser] = useState<UserProfile | null>(null);
   const me = savedUser ?? user;
-  const needsAddress = !!me && addressError(me.address) !== null;
+  // Recipient name and phone are only required once the API stores them.
+  const wantsContact = apiHasContact(me);
+  const needsAddress = !!me && (addressError(me.address) !== null || (wantsContact && contactError(normalizeContact(me)) !== null));
   const [draft, setDraft] = useState(() => normalizeAddress(user?.address));
+  const [contactDraft, setContactDraft] = useState(() => normalizeContact(user));
   const [savingAddress, setSavingAddress] = useState(false);
 
   const onPaidRef = useRef(onPaid);
@@ -93,7 +97,7 @@ export default function UPaySheet({
   const maxQty = Math.max(1, Math.min(product?.stock ?? 1, 20));
 
   async function saveAddress() {
-    const problem = addressError(draft);
+    const problem = (wantsContact ? contactError(contactDraft) : null) ?? addressError(draft);
     if (problem) {
       setError(problem);
       return;
@@ -101,7 +105,12 @@ export default function UPaySheet({
     setSavingAddress(true);
     setError(null);
     try {
-      setSavedUser(await updateUser(me?.user_id ?? DEMO_USER_ID, { address: normalizeAddress(draft) }));
+      setSavedUser(
+        await updateUser(me?.user_id ?? DEMO_USER_ID, {
+          ...(wantsContact ? contactPayload(contactDraft) : {}),
+          address: normalizeAddress(draft),
+        }),
+      );
     } catch (e) {
       setError(e instanceof ApiError && e.status !== 404 && e.status !== 405 ? e.message : "บันทึกที่อยู่ไม่สำเร็จ ลองใหม่อีกครั้ง");
     } finally {
@@ -181,10 +190,11 @@ export default function UPaySheet({
                         <PinIcon />
                       </span>
                       <div>
-                        <div className="font-semibold">กรอกที่อยู่จัดส่ง</div>
+                        <div className="font-semibold">{wantsContact ? "กรอกข้อมูลผู้รับและที่อยู่จัดส่ง" : "กรอกที่อยู่จัดส่ง"}</div>
                         <div className="text-[12.5px] text-muted">กรอกครั้งเดียว ครั้งต่อไปใช้ที่อยู่นี้ให้ และแก้ได้ที่ ข้อมูลของฉัน</div>
                       </div>
                     </div>
+                    {wantsContact && <RecipientFields value={contactDraft} onChange={setContactDraft} />}
                     <AddressFields value={draft} onChange={setDraft} />
                     <button
                       onClick={saveAddress}
@@ -196,12 +206,13 @@ export default function UPaySheet({
                   </div>
                 ) : (
                   <Row icon={<PinIcon />}>
-                    <div className="font-semibold">{me?.display_name ?? "ผู้ใช้เดโม่"}</div>
+                    <div className="font-semibold">{me?.full_name || me?.display_name || "ผู้ใช้เดโม่"}</div>
                     {me && (
                       <div className="text-[13px] text-ink-2">
                         {me.address.line} {me.address.district} {me.address.province} {me.address.postcode}
                       </div>
                     )}
+                    {me?.phone && <div className="text-[13px] tabular-nums text-ink-2">โทร {me.phone}</div>}
                   </Row>
                 )}
                 <div className="border-t border-line" />

@@ -187,6 +187,15 @@ from the friend, otherwise nothing can be saved (no fake screens):
 > ออเดอร์เก่าเก็บที่อยู่ไว้ในตัวเองอยู่แล้ว ไม่ต้องแก้ย้อนหลัง
 > ตอนนี้ยังใช้ user_id จาก path ไปก่อน ตอนทำ login ค่อยเปลี่ยนเป็นตรวจ token
 
+Real name and phone (design drafted, waiting for approval): the `/welcome`, `/account` and first-checkout
+forms also ask for the recipient's full name and phone. This needs a schema change, which only the
+friend can make (`api/app/models.py`, see AGENTS.md "Schema"):
+> ขอเพิ่ม 2 ฟิลด์ใน AppUser: `full_name` (str, nullable) กับ `phone` (str, nullable) แล้วให้
+> `PATCH /api/users/{user_id}` รับ `full_name` และ `phone` เพิ่ม (phone ตรวจว่าเป็นเลข 9-10 หลัก
+> ตัดช่องว่างและขีดออก) ส่งสองฟิลด์นี้กลับใน UserProfile ด้วย และตอนสร้างออเดอร์ให้คัดลอกชื่อ
+> กับเบอร์ไปเก็บในออเดอร์ (recipient_name, recipient_phone) เหมือนที่เก็บ address ไว้ เพื่อให้ร้านเห็น
+> ว่าส่งให้ใครและโทรหาเบอร์ไหน (ถ้า `init_db` เพิ่มคอลัมน์ nullable ให้เองอยู่แล้วก็ไม่ต้องลบตาราง)
+
 ## 8. The design canvas (optional reference)
 
 Private Claude Design artifact: https://claude.ai/artifact/NXeHTM7Xw4sWym3FcQreMY

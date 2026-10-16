@@ -71,7 +71,7 @@ export default function Login() {
     });
     setBusy(false);
     if (error) setError(thaiError(error.message));
-    else if (data.session) router.push("/");
+    else if (data.session) router.push("/welcome");
     else setNotice("สมัครแล้ว ส่งลิงก์ยืนยันไปที่อีเมลของคุณ กดลิงก์แล้วกลับมาเข้าสู่ระบบได้เลย");
   }
 
