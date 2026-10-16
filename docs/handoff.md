@@ -177,6 +177,16 @@ The login page works against Supabase but the API still serves everyone as `u_de
 - If the friend cannot ship it before the demo: ship only the web side (login shows the name in the
   menu, data stays demo). Safe, nothing breaks.
 
+### Account page (My info and address edit): design drafted, waiting for approval
+Canvas boards `Account.dc.html` and `AccountMobile.dc.html` (route `/account`, opened from the user card
+in the sidebar). Edit display name and shipping address; email is read only. Needs one API endpoint
+from the friend, otherwise nothing can be saved (no fake screens):
+> ขอ endpoint แก้ข้อมูลผู้ใช้หน่อยครับ `PATCH /api/users/{user_id}` รับ body
+> `{"display_name": "...", "address": {"line","district","province","postcode"}}` (ทุก field optional,
+> validate ว่า address ครบ 4 ช่อง และ postcode เป็นเลข 5 หลัก) คืน UserProfile ที่อัปเดตแล้ว
+> ออเดอร์เก่าเก็บที่อยู่ไว้ในตัวเองอยู่แล้ว ไม่ต้องแก้ย้อนหลัง
+> ตอนนี้ยังใช้ user_id จาก path ไปก่อน ตอนทำ login ค่อยเปลี่ยนเป็นตรวจ token
+
 ## 8. The design canvas (optional reference)
 
 Private Claude Design artifact: https://claude.ai/artifact/NXeHTM7Xw4sWym3FcQreMY

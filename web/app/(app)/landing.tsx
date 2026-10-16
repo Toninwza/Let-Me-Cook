@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ProductHit, listProducts } from "@/lib/api";
+import { DEMO_USER_ID, ProductHit, listOrders, listProducts } from "@/lib/api";
 import { baht } from "@/lib/format";
 import { pickVaried } from "@/lib/pick";
 import { MenuButton } from "@/components/app-shell";
@@ -26,10 +26,14 @@ export default function Landing() {
   const router = useRouter();
   const [text, setText] = useState("");
   const [products, setProducts] = useState<ProductHit[]>([]);
+  const [active, setActive] = useState(0);
 
   useEffect(() => {
     listProducts()
       .then((all) => setProducts(pickVaried(all, SPOTS.length)))
+      .catch(() => {});
+    listOrders({ userId: DEMO_USER_ID })
+      .then((all) => setActive(all.filter((o) => o.status !== "delivered" && o.status !== "cancelled").length))
       .catch(() => {});
   }, []);
 
@@ -119,6 +123,18 @@ export default function Landing() {
               </button>
             ))}
           </div>
+
+          <Link
+            href="/orders"
+            className="flex w-fit items-center gap-2.5 rounded-2xl border border-[#DDE2DE] bg-paper py-2 pl-2.5 pr-4 text-[14px] font-medium text-ink hover:border-basil"
+          >
+            <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-basil-soft text-basil">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M6 8h12l-1 12H7L6 8zM9 8a3 3 0 0 1 6 0" />
+              </svg>
+            </span>
+            {active > 0 ? `ติดตามออเดอร์ (${active} รายการกำลังดำเนินการ)` : "ติดตามออเดอร์ของฉัน"}
+          </Link>
         </main>
 
         <section aria-label="สินค้าจากร้านบนแพลตฟอร์ม" className="relative hidden min-h-[780px] flex-[1_1_560px] xl:block">

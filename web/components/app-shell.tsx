@@ -9,6 +9,7 @@ import { useAuth } from "./auth-provider";
 const NAV = [
   { label: "หน้าแรก", href: "/", icon: "M4 11l8-7 8 7v9H4z" },
   { label: "Chatbot", href: "/chat", icon: "M4 5h16v11H10l-5 4v-4H4z", badge: "AI" },
+  { label: "ออเดอร์", href: "/orders", icon: "M6 8h12l-1 12H7L6 8zM9 8a3 3 0 0 1 6 0" },
 ];
 
 const ShellContext = createContext<{ openMenu: () => void }>({ openMenu: () => {} });
@@ -118,6 +119,7 @@ function Tip({ children }: { children: React.ReactNode }) {
 function UserCard({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
   const { loading, session, name, email, signOut, configured } = useAuth();
   const initial = (name ?? "ม").slice(0, 1).toUpperCase();
+  const onAccount = usePathname() === "/account";
 
   if (!session) {
     return (
@@ -146,25 +148,31 @@ function UserCard({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: 
 
   return (
     <div className="px-3 pb-3.5">
-      <div className={`group relative flex items-center gap-2.5 rounded-2xl border border-line ${collapsed ? "justify-center py-2" : "p-2.5"}`}>
-        <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-saffron font-bold text-[#2B1C00]">{initial}</span>
-        {!collapsed && (
-          <>
+      <div className={`group relative flex items-center gap-1 rounded-2xl border ${onAccount ? "border-basil-soft bg-basil-soft" : "border-line"} ${collapsed ? "justify-center py-2" : "p-1.5"}`}>
+        <Link
+          href="/account"
+          onClick={onNavigate}
+          aria-label="ข้อมูลของฉัน"
+          aria-current={onAccount ? "page" : undefined}
+          className={`flex min-w-0 items-center gap-2.5 rounded-xl ${collapsed ? "" : "flex-1 p-1 hover:bg-ground"}`}
+        >
+          <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-saffron font-bold text-[#2B1C00]">{initial}</span>
+          {!collapsed && (
             <span className="flex min-w-0 flex-1 flex-col leading-tight">
               <span className="truncate text-[13.5px] font-semibold text-ink">{name}</span>
               <span className="truncate text-[11.5px] text-muted">{email}</span>
             </span>
+          )}
+          {collapsed && <Tip>ข้อมูลของฉัน</Tip>}
+        </Link>
+        {!collapsed && (
+          <>
             <button onClick={signOut} aria-label="ออกจากระบบ" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-muted hover:bg-ground hover:text-ink">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M9 4H5v16h4M16 8l4 4-4 4M20 12H9" />
               </svg>
             </button>
           </>
-        )}
-        {collapsed && (
-          <button onClick={signOut} aria-label="ออกจากระบบ" className="absolute inset-0 rounded-2xl">
-            <Tip>{name} · ออกจากระบบ</Tip>
-          </button>
         )}
       </div>
     </div>
