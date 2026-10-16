@@ -94,22 +94,22 @@ export default function Login() {
   }
 
   const inputCls =
-    "h-[50px] w-full rounded-[14px] border-[1.5px] border-line-strong bg-paper px-4 text-[15px] outline-none placeholder:text-faint focus:border-basil focus:shadow-[0_0_0_4px_rgba(30,111,80,0.12)] disabled:opacity-50 lg:h-[52px]";
+    "h-[50px] w-full rounded-[14px] border-[1.5px] border-line-strong bg-paper px-4 text-[15px] outline-none placeholder:text-faint focus:border-basil focus:shadow-[0_0_0_4px_rgba(103,77,241,0.15)] disabled:opacity-50 lg:h-[52px]";
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[#FAFAF7] lg:flex-row">
+    <div className="flex min-h-dvh flex-col bg-[#F6F3F8] lg:flex-row">
       <section aria-hidden="true" className="relative h-[200px] shrink-0 overflow-hidden rounded-b-[32px] bg-forest text-paper lg:h-auto lg:min-h-dvh lg:w-[46%] lg:rounded-none">
         <svg viewBox="0 0 760 760" fill="none" className="absolute left-1/2 top-[110px] h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 lg:top-1/2 lg:h-[760px] lg:w-[760px]">
-          <circle cx="380" cy="380" r="120" stroke="#2E6B53" strokeWidth="1.5" strokeDasharray="2 8" strokeLinecap="round" />
-          <circle cx="380" cy="380" r="210" stroke="#235A44" strokeWidth="1.5" strokeDasharray="2 8" strokeLinecap="round" />
-          <circle cx="380" cy="380" r="300" stroke="#1B4A38" strokeWidth="1.5" strokeDasharray="2 8" strokeLinecap="round" />
+          <circle cx="380" cy="380" r="120" stroke="#3A3F9E" strokeWidth="1.5" strokeDasharray="2 8" strokeLinecap="round" />
+          <circle cx="380" cy="380" r="210" stroke="#2A2F7C" strokeWidth="1.5" strokeDasharray="2 8" strokeLinecap="round" />
+          <circle cx="380" cy="380" r="300" stroke="#1E2263" strokeWidth="1.5" strokeDasharray="2 8" strokeLinecap="round" />
         </svg>
         <div className="absolute left-1/2 top-[62px] -translate-x-1/2 lg:top-1/2 lg:-translate-y-1/2">
           <span className="lg:hidden">
-            <Magnet size={78} tips="#E9EEEA" />
+            <Magnet size={78} tips="#FFFFFF" />
           </span>
           <span className="hidden lg:block">
-            <Magnet size={150} tips="#E9EEEA" />
+            <Magnet size={150} tips="#FFFFFF" />
           </span>
         </div>
         {decor.map((p, i) => (
@@ -130,7 +130,7 @@ export default function Login() {
           </div>
         ))}
         <div className="absolute left-12 top-10 hidden items-center gap-2.5 lg:flex">
-          <Magnet size={28} tips="#E9EEEA" />
+          <Magnet size={28} tips="#FFFFFF" />
           <span className="font-display text-[21px] font-extrabold">PULL</span>
         </div>
         <div className="absolute inset-x-12 bottom-12 hidden flex-col gap-1.5 lg:flex">
@@ -139,7 +139,7 @@ export default function Login() {
             <br />
             <span className="text-saffron">Everything you want</span>
           </div>
-          <div className="text-sm text-[#A9C9B8]">{t("บอกครั้งเดียว bot ดึงของจากร้านบนแพลตฟอร์ม คัดให้ 3 ตัว แล้วจ่ายจบในแชท")}</div>
+          <div className="text-sm text-[#D9CFFA]">{t("บอกครั้งเดียว bot ดึงของจากร้านบนแพลตฟอร์ม คัดให้ 3 ตัว แล้วจ่ายจบในแชท")}</div>
         </div>
       </section>
 
@@ -178,7 +178,7 @@ export default function Login() {
             </div>
           ) : (
             <>
-              <div role="tablist" aria-label={t("เลือกโหมด")} className="grid grid-cols-2 gap-1 rounded-[14px] bg-[#ECEFEA] p-1">
+              <div role="tablist" aria-label={t("เลือกโหมด")} className="grid grid-cols-2 gap-1 rounded-[14px] bg-[#ECE8F7] p-1">
                 {(["in", "up"] as const).map((m) => (
                   <button
                     key={m}
@@ -196,16 +196,16 @@ export default function Login() {
                 type="button"
                 onClick={google}
                 disabled={!configured}
-                className="flex h-[50px] items-center justify-center gap-3 rounded-[14px] border-[1.5px] border-line-strong bg-paper text-[15px] font-semibold hover:border-basil hover:bg-[#F7FAF8] disabled:opacity-50 lg:h-[52px]"
+                className="flex h-[50px] items-center justify-center gap-3 rounded-[14px] border-[1.5px] border-line-strong bg-paper text-[15px] font-semibold hover:border-basil hover:bg-[#F6F2FF] disabled:opacity-50 lg:h-[52px]"
               >
                 <span className="flex h-6 w-6 items-center justify-center rounded-full border-[1.5px] border-ink text-[13px] font-bold">G</span>
                 {t("ดำเนินการต่อด้วย Google")}
               </button>
 
               <div className="flex items-center gap-3 text-[12.5px] text-faint">
-                <span className="h-px flex-1 bg-[#DDE2DE]" />
+                <span className="h-px flex-1 bg-[#E6E1F3]" />
                 {t("หรือใช้อีเมล")}
-                <span className="h-px flex-1 bg-[#DDE2DE]" />
+                <span className="h-px flex-1 bg-[#E6E1F3]" />
               </div>
 
               <form onSubmit={submit} className="flex flex-col gap-3">

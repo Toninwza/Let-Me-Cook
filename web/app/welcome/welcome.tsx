@@ -58,7 +58,7 @@ export default function Welcome() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[#FAFAF7] lg:flex-row">
+    <div className="flex min-h-dvh flex-col bg-[#F6F3F8] lg:flex-row">
       <section className="flex shrink-0 flex-col gap-3 bg-forest px-5 py-5 text-paper lg:w-[460px] lg:justify-between lg:px-11 lg:py-10">
         <Link href="/" className="flex items-center gap-2.5">
           <Magnet size={26} />
@@ -69,9 +69,9 @@ export default function Welcome() {
             {t("ขอรู้จักคุณ")}
             <br className="hidden lg:block" /> {t("อีกนิดเดียว")}
           </h1>
-          <p className="max-w-[330px] text-[13px] text-[#CFE3D8] lg:text-[15px]">{t("bot จะเรียกคุณด้วยชื่อเล่น และใช้ที่อยู่นี้คำนวณวันส่งให้ตอนคัดสินค้า")}</p>
+          <p className="max-w-[330px] text-[13px] text-[#D9CFFA] lg:text-[15px]">{t("bot จะเรียกคุณด้วยชื่อเล่น และใช้ที่อยู่นี้คำนวณวันส่งให้ตอนคัดสินค้า")}</p>
         </div>
-        <p className="hidden text-[12.5px] text-[#9DBFAE] lg:block">{t("กรอกครั้งเดียว แก้ได้ทุกเมื่อที่ ข้อมูลของฉัน")}</p>
+        <p className="hidden text-[12.5px] text-[#B6A9F0] lg:block">{t("กรอกครั้งเดียว แก้ได้ทุกเมื่อที่ ข้อมูลของฉัน")}</p>
       </section>
 
       <main className="flex flex-1 items-start justify-center px-4 py-5 lg:items-center lg:p-8">

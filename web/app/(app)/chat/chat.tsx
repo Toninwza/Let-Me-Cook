@@ -394,7 +394,7 @@ export default function Chat() {
 
       {micError && <p className="border-t border-line bg-danger-soft px-4 py-2 text-[13px] text-danger">{micError}</p>}
       <form onSubmit={onSubmit} className="border-t border-line bg-paper p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:border-0 md:bg-ground md:px-7 md:pb-5">
-        <div className="mx-auto flex w-full max-w-3xl items-center gap-2 md:rounded-full md:border-[1.5px] md:border-[#DDE2DE] md:bg-paper md:p-1.5">
+        <div className="mx-auto flex w-full max-w-3xl items-center gap-2 md:rounded-full md:border-[1.5px] md:border-[#E6E1F3] md:bg-paper md:p-1.5">
           {recorder.recording ? (
             <div className="flex h-11 min-w-0 flex-1 items-center gap-2.5 pl-1" role="status" aria-live="polite">
               {micMode === "tap" && (
@@ -564,7 +564,7 @@ function BotMessage({
       )}
 
       {turn.options && turn.options.items.length === 0 && (
-        <section aria-label={t("ไม่พบสินค้าที่ตรงเงื่อนไข")} className="space-y-2.5 rounded-2xl border border-[#F0D7A6] bg-[#FFF6E5] p-3.5">
+        <section aria-label={t("ไม่พบสินค้าที่ตรงเงื่อนไข")} className="space-y-2.5 rounded-2xl border border-[#F1C5EE] bg-[#FBEAFD] p-3.5">
           <p className="text-[13.5px] text-[#2B1C00]">{turn.options.reason ?? t("ไม่เจอสินค้าที่ตรงเงื่อนไข")}</p>
           <div className="text-xs font-semibold text-saffron-ink">{t("ลองแบบนี้ไหม")}</div>
           <div className="flex flex-col gap-2">
@@ -573,7 +573,7 @@ function BotMessage({
                 key={a}
                 disabled={disabled}
                 onClick={() => onReply(a)}
-                className="min-h-11 rounded-xl border border-[#E5C78C] bg-paper px-3.5 py-2 text-left text-[13.5px] hover:border-saffron hover:bg-[#FFFBF2] disabled:opacity-40"
+                className="min-h-11 rounded-xl border border-[#EBB3E6] bg-paper px-3.5 py-2 text-left text-[13.5px] hover:border-saffron hover:bg-[#FDF4FE] disabled:opacity-40"
               >
                 {a}
               </button>

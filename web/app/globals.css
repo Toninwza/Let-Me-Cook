@@ -1,21 +1,30 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #17211d;
-  --color-ink-2: #3a433e;
-  --color-muted: #56625c;
-  --color-faint: #6b756f;
-  --color-line: #e2e5e0;
-  --color-line-strong: #c9d1cc;
-  --color-ground: #f4f5f2;
+  --color-ink: #14183f;
+  --color-ink-2: #3d4170;
+  --color-muted: #555a85;
+  --color-faint: #6a6f94;
+  --color-line: #e6e1f3;
+  --color-line-strong: #cfc7ea;
+  --color-ground: #f6f3f8;
   --color-paper: #ffffff;
-  --color-basil: #1e6f50;
-  --color-basil-dark: #14513a;
-  --color-basil-soft: #e3f1ea;
-  --color-forest: #0f3d2c;
-  --color-saffron: #f2a93b;
-  --color-saffron-soft: #fff1d6;
-  --color-saffron-ink: #6b4a00;
+  --color-basil: #674df1;
+  --color-basil-dark: #4e36d4;
+  --color-basil-soft: #ece8ff;
+  --color-forest: #0b0f4a;
+  --color-saffron: #fa81e9;
+  --color-saffron-soft: #fbeafd;
+  --color-saffron-ink: #5b1f6e;
+  /* PULL pinky palette (feat/colorfulpinky) */
+  --color-iris: #674df1;
+  --color-iris-dark: #4e36d4;
+  --color-iris-soft: #ece8ff;
+  --color-bubble: #fa81e9;
+  --color-orchid: #ea9ff1;
+  --color-orchid-soft: #fbeafd;
+  --color-cloud: #f4f3f1;
+  --color-night: #0b0f4a;
   --color-danger: #b42318;
   --color-danger-soft: #fcebe8;
   --font-sans: var(--font-plex-thai), "Noto Sans Thai", system-ui, sans-serif;

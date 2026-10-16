@@ -115,7 +115,7 @@ export default function ShopOrders() {
             </thead>
             <tbody>
               {shown.map((o) => (
-                <tr key={o.order_id} className={`hover:bg-ground/60 ${o.status === "paid" ? "bg-[#FFFBF2]" : ""}`}>
+                <tr key={o.order_id} className={`hover:bg-ground/60 ${o.status === "paid" ? "bg-[#FDF4FE]" : ""}`}>
                   <td className="whitespace-nowrap border-b border-line/70 px-4 py-3.5 tabular-nums">{stamp(o.created_at)}</td>
                   <td className="whitespace-nowrap border-b border-line/70 px-4 py-3.5 font-mono text-[12.5px]">{o.order_id}</td>
                   <td className="border-b border-line/70 px-4 py-3.5">

@@ -1,9 +1,9 @@
 const TINTS = [
-  ["#E7D7B8", "#4A3510"],
-  ["#CFE3D8", "#14513A"],
-  ["#DDE4F0", "#24365A"],
-  ["#F3D9D2", "#7A2E1E"],
-  ["#EDE7DA", "#3A433E"],
+  ["#E4DDFB", "#3B2A99"],
+  ["#FBD9F6", "#7A1F6C"],
+  ["#DDE0F7", "#262E7A"],
+  ["#F6E1FA", "#6B2A7A"],
+  ["#EFEAF5", "#3D4170"],
 ];
 
 function tintFor(key: string) {

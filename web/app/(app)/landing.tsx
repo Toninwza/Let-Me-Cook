@@ -92,13 +92,13 @@ export default function Landing() {
   }
 
   return (
-    <div className="h-full overflow-x-hidden overflow-y-auto bg-[#FAFAF7]">
+    <div className="h-full overflow-x-hidden overflow-y-auto bg-[linear-gradient(160deg,#fbeafd_0%,#f4f3f1_45%,#ece8ff_100%)] text-night">
       <div className="flex min-h-full flex-col">
       <header className="flex items-center justify-between gap-3 px-2 py-3 sm:px-6 md:hidden">
         <div className="flex items-center gap-1 md:hidden">
           <MenuButton className="text-ink hover:bg-ground" />
           <Link href="/" className="flex items-center gap-2">
-            <Magnet size={22} />
+            <Magnet size={22} body={["#674DF1", "#FA81E9"]} tips="#FFFFFF" />
             <span className="font-display text-lg font-extrabold">PULL</span>
           </Link>
         </div>
@@ -107,26 +107,26 @@ export default function Landing() {
 
       <div className="flex flex-1 flex-wrap items-stretch">
         <main className="flex min-w-0 flex-[1_1_520px] flex-col justify-center gap-5 px-5 pb-14 pt-4 sm:px-8 md:pt-6 xl:pl-12">
-          <span className="flex w-fit items-center gap-2 rounded-full bg-basil-soft px-3 py-1 text-[13px] font-semibold text-basil-dark">
-            <span className="h-1.5 w-1.5 rounded-full bg-basil" />
+          <span className="flex w-fit items-center gap-2 rounded-full bg-iris-soft px-3 py-1 text-[13px] font-semibold text-iris-dark">
+            <span className="h-1.5 w-1.5 rounded-full bg-bubble" />
             {t("AI shopping agent ในแชท")}
           </span>
-          <h1 aria-label="Pull and serve everything you want" className="font-display text-[30px] font-semibold leading-[1.1] tracking-[-0.025em] min-[400px]:text-[36px] sm:text-[44px] 2xl:text-[58px]">
+          <h1 aria-label="Pull and serve everything you want" className="font-display text-[30px] text-night font-semibold leading-[1.1] tracking-[-0.025em] min-[400px]:text-[36px] sm:text-[44px] 2xl:text-[58px]">
             <span aria-hidden="true">Pull and serve</span>
             <br />
             <span aria-hidden="true" className="inline-flex max-w-full flex-wrap items-center gap-x-3 sm:gap-x-3.5">
               everything
               <span className="mt-1.5 inline-flex">
-                <Magnet size={40} />
+                <Magnet size={40} body={["#674DF1", "#FA81E9"]} tips="#FFFFFF" />
               </span>
               want
             </span>
           </h1>
-          <p className="max-w-[500px] text-[17px] text-ink-2">{t("บอกครั้งเดียว bot ดึงของจากร้านบนแพลตฟอร์มมาให้ คัดเหลือ 3 ตัว แล้วจ่ายจบในแชท")}</p>
+          <p className="max-w-[500px] text-[17px] text-night/70">{t("บอกครั้งเดียว bot ดึงของจากร้านบนแพลตฟอร์มมาให้ คัดเหลือ 3 ตัว แล้วจ่ายจบในแชท")}</p>
 
           <form
             onSubmit={onSubmit}
-            className="flex max-w-[560px] flex-col gap-2 rounded-[26px] border-[1.5px] border-[#DDE2DE] bg-paper py-4 pl-5 pr-3.5 shadow-[0_18px_50px_rgba(23,33,29,0.08)] focus-within:border-basil"
+            className="flex max-w-[560px] flex-col gap-2 rounded-[26px] border-[1.5px] border-orchid bg-paper py-4 pl-5 pr-3.5 shadow-[0_18px_50px_rgba(103,77,241,0.14)] focus-within:border-iris"
           >
             <label htmlFor="landing-prompt" className="text-[12.5px] font-semibold text-muted">
               {t("บอก bot ว่าอยากได้อะไร")}
@@ -168,7 +168,7 @@ export default function Landing() {
                   aria-label={voice === "recording" ? t("หยุดอัดและส่งเสียง") : t("พูดกับ bot")}
                   aria-pressed={voice === "recording"}
                   className={`flex h-[46px] w-[46px] items-center justify-center rounded-full disabled:opacity-40 ${
-                    voice === "recording" ? "bg-danger text-paper" : "border border-line-strong text-ink hover:border-basil hover:bg-basil-soft hover:text-basil"
+                    voice === "recording" ? "bg-danger text-paper" : "border border-orchid text-night hover:border-iris hover:bg-iris-soft hover:text-iris"
                   }`}
                 >
                   {voice === "recording" ? (
@@ -185,7 +185,7 @@ export default function Landing() {
                 <button
                   type="submit"
                   disabled={voice === "transcribing"}
-                  className="flex h-[46px] shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-basil pl-5 pr-4 font-semibold text-paper hover:bg-basil-dark disabled:opacity-40"
+                  className="flex h-[46px] shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-iris pl-5 pr-4 font-semibold text-paper hover:bg-iris-dark disabled:opacity-40"
                 >
                   {voice === "recording" ? t("ส่งเสียง") : t("เริ่มแชท")}
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -201,7 +201,7 @@ export default function Landing() {
               <button
                 key={e}
                 onClick={() => start(t(e))}
-                className="min-h-10 rounded-full border border-[#DDE2DE] bg-paper px-3.5 text-[13.5px] text-ink-2 hover:border-basil hover:text-basil"
+                className="min-h-10 rounded-full border border-orchid bg-paper px-3.5 text-[13.5px] text-night/80 hover:border-iris hover:text-iris"
               >
                 {t(e)}
               </button>
@@ -210,9 +210,9 @@ export default function Landing() {
 
           <Link
             href="/orders"
-            className="flex w-fit items-center gap-2.5 rounded-2xl border border-[#DDE2DE] bg-paper py-2 pl-2.5 pr-4 text-[14px] font-medium text-ink hover:border-basil"
+            className="flex w-fit items-center gap-2.5 rounded-2xl border border-orchid bg-paper py-2 pl-2.5 pr-4 text-[14px] font-medium text-night hover:border-iris"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-basil-soft text-basil">
+            <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-orchid-soft text-iris">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M6 8h12l-1 12H7L6 8zM9 8a3 3 0 0 1 6 0" />
               </svg>
@@ -223,13 +223,13 @@ export default function Landing() {
 
         <section aria-label={t("สินค้าจากร้านบนแพลตฟอร์ม")} className="relative hidden min-h-[780px] flex-[1_1_560px] xl:block">
           <svg width="760" height="760" viewBox="0 0 760 760" fill="none" aria-hidden="true" className="absolute left-1/2 top-[440px] -translate-x-1/2 -translate-y-1/2">
-            <circle cx="380" cy="380" r="150" stroke="#DCE7E0" strokeWidth="1.5" strokeDasharray="2 8" strokeLinecap="round" />
-            <circle cx="380" cy="380" r="240" stroke="#E3ECE6" strokeWidth="1.5" strokeDasharray="2 8" strokeLinecap="round" />
-            <circle cx="380" cy="380" r="330" stroke="#EAF0EC" strokeWidth="1.5" strokeDasharray="2 8" strokeLinecap="round" />
-            <circle cx="380" cy="380" r="96" fill="#F2F6F3" />
+            <circle cx="380" cy="380" r="150" stroke="#EA9FF1" strokeWidth="1.5" strokeDasharray="2 8" strokeLinecap="round" />
+            <circle cx="380" cy="380" r="240" stroke="#D9C7F8" strokeWidth="1.5" strokeDasharray="2 8" strokeLinecap="round" />
+            <circle cx="380" cy="380" r="330" stroke="#E4DBFA" strokeWidth="1.5" strokeDasharray="2 8" strokeLinecap="round" />
+            <circle cx="380" cy="380" r="96" fill="#FBEAFD" />
           </svg>
           <div className="absolute left-1/2 top-[440px] -translate-x-1/2 -translate-y-[42%]">
-            <Magnet size={150} label={t("โลโก้แม่เหล็ก PULL")} />
+            <Magnet size={150} body={["#674DF1", "#FA81E9"]} tips="#FFFFFF" label={t("โลโก้แม่เหล็ก PULL")} />
           </div>
 
           {products.map((p, i) => (
@@ -237,15 +237,15 @@ export default function Landing() {
               key={p.product_id}
               href={`/chat?q=${encodeURIComponent(p.title)}`}
               aria-label={t("ถาม bot เรื่อง {title} {price}", { title: p.title, price: baht(p.price) })}
-              className="absolute w-[168px] rounded-[18px] bg-paper shadow-[0_16px_40px_rgba(23,33,29,0.10)] transition-transform hover:z-10 hover:scale-105"
+              className="absolute w-[168px] rounded-[18px] bg-paper shadow-[0_16px_40px_rgba(103,77,241,0.18)] transition-transform hover:z-10 hover:scale-105"
               style={{ left: SPOTS[i].left, top: SPOTS[i].top, transform: `rotate(${SPOTS[i].rot}deg)` }}
             >
               <div className="relative">
                 <ProductThumb imageUrl={p.image_url} category={p.category} className="h-[104px] w-full rounded-t-[18px]" />
-                <span className="absolute -bottom-3 left-2.5 rounded-full bg-ink px-2.5 py-0.5 text-[12.5px] font-bold text-paper tabular-nums">{baht(p.price)}</span>
+                <span className="absolute -bottom-3 left-2.5 rounded-full bg-iris px-2.5 py-0.5 text-[12.5px] font-bold text-paper tabular-nums">{baht(p.price)}</span>
               </div>
               <div className="flex items-center gap-2 px-3 pb-3 pt-5">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-forest text-[10.5px] font-bold text-paper">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bubble text-[10.5px] font-bold text-paper">
                   {p.shop.name.slice(0, 2).toUpperCase()}
                 </span>
                 <div className="min-w-0 leading-tight">
@@ -280,7 +280,7 @@ function VoiceStatus({ voice, seconds, error }: { voice: "idle" | "recording" | 
     case "transcribing":
       return (
         <span role="status" className="flex items-center gap-2 text-xs text-muted">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-saffron" />
+          <span className="h-2 w-2 animate-pulse rounded-full bg-bubble" />
           {t("กำลังถอดเสียง")}
         </span>
       );
