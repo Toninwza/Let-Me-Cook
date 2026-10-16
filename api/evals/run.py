@@ -6,6 +6,7 @@ Needs GEMINI_API_KEY. Semantic cases only pass on Postgres with embeddings (pyth
 
 import asyncio
 import json
+import re
 import sys
 import time
 from datetime import UTC, datetime, timedelta
@@ -18,6 +19,8 @@ from app.schemas import HistoryMessage, UserProfile
 _HERE = Path(__file__).parent
 _SEED = _HERE.parent / "seed" / "data.json"
 _CONCURRENCY = 3
+_TITLES: list[str] = []  # product titles stay Thai in English replies; filled in main()
+_THAI = re.compile(r"[฀-๿]")
 
 
 def _profile() -> UserProfile:
@@ -65,6 +68,28 @@ def _contract_problems(events: list[dict]) -> list[str]:
     return problems
 
 
+def _thai_in_bot_text(events: list[dict]) -> list[str]:
+    """Bot-written text that still contains Thai, ignoring product titles and the user's address."""
+    texts = []
+    for e in events:
+        if e["type"] == "agent_step" and e["step_id"] not in ("profile", "resolve"):
+            texts += [e["label"], e.get("detail") or ""]
+        elif e["type"] == "message_delta":
+            texts.append(e["text"])
+        elif e["type"] == "clarify":
+            texts += [e["question"], *e.get("choices", [])]
+        elif e["type"] == "options":
+            texts += [e.get("reason") or "", *e.get("alternatives", []), *(i["reason"] for i in e["items"])]
+    found = []
+    for text in texts:
+        for title in _TITLES:
+            text = text.replace(title, "")
+        text = re.sub(r'"[^"]*"', "", text)  # a quoted (part of a) product title is allowed
+        if _THAI.search(text):
+            found.append(text.strip()[:60])
+    return found
+
+
 def _check(expect: dict, events: list[dict], prev_options: list[str], prev_shown: list[str]) -> list[str]:
     kinds = {e["type"] for e in events}
     options = next((e for e in events if e["type"] == "options"), None)
@@ -78,6 +103,8 @@ def _check(expect: dict, events: list[dict], prev_options: list[str], prev_shown
         problems.append(f"expected options, got {sorted(kinds - {'agent_step', 'message_delta'})}")
     if want == "clarify" and "clarify" not in kinds:
         problems.append("expected clarify")
+    if expect.get("lang") == "en" and not options and (thai := _thai_in_bot_text(events)):
+        problems.append(f"Thai text in an English reply: {thai[:3]}")
     if want == "clarify_or_options" and "clarify" not in kinds and not items:
         problems.append("expected clarify or product options")
     if want == "answer" and (options or checkout or "message_delta" not in kinds):
@@ -95,6 +122,8 @@ def _check(expect: dict, events: list[dict], prev_options: list[str], prev_shown
                 problems.append(f"picked {checkout['product_id']}, expected option {n} of {prev_options}")
             if checkout["quantity"] != expect.get("quantity", 1):
                 problems.append(f"quantity {checkout['quantity']}")
+            if "payment_method" in expect and checkout.get("payment_method") != expect["payment_method"]:
+                problems.append(f"payment_method {checkout.get('payment_method')!r}, expected {expect['payment_method']!r}")
 
     if options:
         if "min_items" in expect and len(items) < expect["min_items"]:
@@ -109,6 +138,8 @@ def _check(expect: dict, events: list[dict], prev_options: list[str], prev_shown
             problems.append(f"over budget: {over}")
         if expect.get("no_repeat") and (again := set(ids) & set(prev_shown)):
             problems.append(f"repeated products already shown: {sorted(again)}")
+        if expect.get("lang") == "en" and (thai := _thai_in_bot_text(events)):
+            problems.append(f"Thai text in an English reply: {thai[:3]}")
         if "deliver_within_days" in expect:
             limit = (catalog.today() + timedelta(days=expect["deliver_within_days"])).isoformat()
             if late := [i["product_id"] for i in items if i["delivery_date"] > limit]:
@@ -142,6 +173,7 @@ async def _run_case(case: dict, gate: asyncio.Semaphore) -> dict:
 
 
 async def main(only: list[str]) -> int:
+    _TITLES[:] = sorted((p.title for p in await catalog.list_products()), key=len, reverse=True)
     cases = json.loads((_HERE / "cases.json").read_text(encoding="utf-8"))["cases"]
     cases = [c for c in cases if not only or c["id"] in only]
     gate = asyncio.Semaphore(_CONCURRENCY)

@@ -29,8 +29,8 @@ T = TypeVar("T", bound=BaseModel)
 _TIMEOUT_S = 45
 # Our JSON answers are a few hundred tokens; the cap bounds the worst case.
 _MAX_OUTPUT_TOKENS = 2048
-# A second try when the JSON comes back invalid (seen once in evals).
-_ATTEMPTS = 2
+# Retries when the JSON comes back invalid: rare, but seen twice in a row once in evals.
+_ATTEMPTS = 3
 
 
 async def generate(system: str, prompt: str, schema: type[T], temperature: float = 0.2) -> T:

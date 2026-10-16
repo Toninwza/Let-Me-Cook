@@ -31,8 +31,8 @@ async def transcribe(audio_bytes: bytes, mime_type: str) -> str:
         response = await http.post(
             _STT_URL,
             headers={"xi-api-key": settings.elevenlabs_api_key},
-            # Thai is the main language; Scribe still transcribes English words inside Thai speech.
-            data={"model_id": _STT_MODEL, "language_code": "tha", "tag_audio_events": "false"},
+            # No language_code: Scribe detects Thai or English itself, so both work by voice too.
+            data={"model_id": _STT_MODEL, "tag_audio_events": "false"},
             files={"file": ("speech", audio_bytes, mime_type or "application/octet-stream")},
         )
     if response.status_code != 200:

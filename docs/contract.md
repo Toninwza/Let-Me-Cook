@@ -163,6 +163,13 @@ async def speak(text: str) -> bytes: ...                                      # 
 it does not, the route adds one. If it raises, the route sends `error` then `done`.
 It uses Gemini (`GEMINI_MODEL`, default `gemini-2.5-flash`) and needs `GEMINI_API_KEY`.
 
+**Language:** every turn is answered in the language of the user's latest message, Thai or English
+(Thai script means Thai, Latin letters only means English, a message with neither keeps the
+previous language). That covers `agent_step` labels and details, `message_delta`, `clarify`, card
+`reason`s, no-result `reason` and `alternatives`, and the route's `error` messages. Product titles,
+categories and addresses are catalog data and stay Thai. `/voice/transcribe` detects Thai or
+English by itself; `/voice/speak` reads either. REST `detail` errors (orders, voice) stay Thai.
+
 ## Catalog interface (Python, `app.catalog`)
 
 The only way the AI module reads product data. All functions are async.
@@ -211,7 +218,7 @@ data: <the event dict as JSON, including "type">
 | `message_delta` | `text`: str | bot text, appended in order |
 | `clarify` | `question`: str, `choices`: list[str] (0 to 4 quick replies) | 2 (vague request) |
 | `options` | `items`: list[ProductOption] (0 to 3, or up to 12 when the user asks to see everything), `reason`: str or null, `alternatives`: list[str] | 4, must not break |
-| `checkout_request` | `product_id`: str, `quantity`: int | user typed "เอาตัวแรก": web opens U-Pay |
+| `checkout_request` | `product_id`: str, `quantity`: int, `payment_method`: `"promptpay"`, `"card"` or null | user typed "เอาตัวแรก": web opens U-Pay. With a `payment_method` ("เอาตัวแรก จ่ายด้วยบัตร", "สแกนจ่าย") the user already chose how to pay: one click, the web creates and confirms the order with that method and goes straight to the QR or the card page. Null: show the method picker as usual |
 | `error` | `code`: `"agent_failed"` / `"timeout"` / `"bad_input"` / `"internal"`, `message`: str (Thai, shown to user) | any |
 | `done` | nothing | ends every stream |
 
