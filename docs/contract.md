@@ -284,10 +284,29 @@ stock, 400 `avax_escrow`, 502 Stripe call failed (Thai `detail`).
 | POST | `/api/voice/enroll` | multipart `file` (audio) + `user_id` | reserved, not built yet |
 | POST | `/api/voice/verify` | multipart `file` (audio) + `user_id` | `{ "match": bool, "score": number }`. Reserved, not built yet |
 
+### [P2] cart
+
+The cart lives in the DB (table `cart_item`, one row per user and product). Price, discount, stock and
+delivery date are never stored in it: every read joins the current `product` row, so the cart is
+always up to date. A cart line is `{ "product": ProductHit, "quantity": int }`.
+
+| method | path | body | response |
+|---|---|---|---|
+| GET | `/api/users/{id}/cart` | | `list[CartLine]`, oldest first |
+| PUT | `/api/users/{id}/cart/{product_id}` | `{ "quantity": int }` (1 to 99) | the whole cart. Sets the quantity, and adds the product when it is not in the cart. The server caps it at `min(stock, 20)` (1 when out of stock, so the line stays visible as sold out) |
+| DELETE | `/api/users/{id}/cart/{product_id}` | | the whole cart. Removing a product that is not in the cart is fine |
+
+Errors: 404 unknown user or product.
+When an order turns `paid` (see Order above), its product is removed from that user's cart in the
+same transaction. Checkout itself is unchanged: one order per product, the cart only remembers what
+the user wants to buy.
+
 ## Web behavior [P2]
 
 - The order card in the chat polls `GET /api/orders/{id}` every 3 s and stops when the status is
   `delivered` or `cancelled`.
+- Every product card has an add-to-cart button next to the buy button. The cart sheet (header of the
+  chat) reads `GET /api/users/{id}/cart` and starts U-Pay for one line at a time.
 - It shows a three step bar: จ่ายแล้ว / กำลังจัดส่ง (with `tracking_number`) / ได้รับแล้ว.
 
 ## Security note

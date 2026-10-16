@@ -506,7 +506,7 @@ export default function Chat() {
           sessionId={sessionId}
           onClose={() => setCheckout(null)}
           onPaid={(order) => {
-            cart.remove(order.product_id);
+            cart.refresh(); // the server already took the product out of the cart
             setTurns((t) => [...t, { role: "order", order }]);
           }}
         />

@@ -54,6 +54,11 @@ class ProductHit(BaseModel):
     shop: ShopInfo
 
 
+class CartLine(BaseModel):
+    product: ProductHit
+    quantity: int
+
+
 class ProductOption(ProductHit):
     reason: str
 
