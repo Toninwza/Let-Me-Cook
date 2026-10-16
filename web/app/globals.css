@@ -16,6 +16,15 @@
   --color-saffron: #f2a93b;
   --color-saffron-soft: #fff1d6;
   --color-saffron-ink: #6b4a00;
+  /* PULL pinky palette (feat/colorfulpinky) */
+  --color-iris: #674df1;
+  --color-iris-dark: #4e36d4;
+  --color-iris-soft: #ece8ff;
+  --color-bubble: #fa81e9;
+  --color-orchid: #ea9ff1;
+  --color-orchid-soft: #fbeafd;
+  --color-cloud: #f4f3f1;
+  --color-night: #0b0f4a;
   --color-danger: #b42318;
   --color-danger-soft: #fcebe8;
   --font-sans: var(--font-plex-thai), "Noto Sans Thai", system-ui, sans-serif;
