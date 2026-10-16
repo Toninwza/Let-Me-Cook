@@ -5,7 +5,8 @@ import { t } from "@/lib/i18n";
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { DEMO_USER_ID, ProductHit, listOrders, listProducts } from "@/lib/api";
+import { DEMO_USER_ID, ProductHit, listOrders, listProducts, transcribe } from "@/lib/api";
+import { MAX_RECORD_S, WARN_RECORD_S, useRecorder } from "@/lib/hooks";
 import { baht } from "@/lib/format";
 import { pickVaried } from "@/lib/pick";
 import { MenuButton } from "@/components/app-shell";
@@ -29,6 +30,12 @@ export default function Landing() {
   const [text, setText] = useState("");
   const [products, setProducts] = useState<ProductHit[]>([]);
   const [active, setActive] = useState(0);
+  // Voice has four states. The recorder owns "recording"; the rest live here.
+  const [phase, setPhase] = useState<{ kind: "idle" } | { kind: "transcribing" } | { kind: "error"; message: string }>({ kind: "idle" });
+  const recorder = useRecorder((blob) => {
+    if (blob) sendVoice(blob); // reached the time limit: send what was said
+  });
+  const voice = recorder.recording ? "recording" : phase.kind;
 
   useEffect(() => {
     listProducts()
@@ -44,9 +51,44 @@ export default function Landing() {
     router.push(clean ? `/chat?q=${encodeURIComponent(clean)}` : "/chat");
   }
 
+  /** idle/error -> transcribing -> chat. Words already typed stay in front of what was said. */
+  async function sendVoice(blob: Blob) {
+    setPhase({ kind: "transcribing" });
+    try {
+      const heard = await transcribe(blob);
+      if (!heard.trim()) throw new Error("empty");
+      start(`${text} ${heard}`);
+    } catch {
+      setPhase({ kind: "error", message: t("ฟังเสียงไม่ออก ลองพูดใหม่อีกครั้งครับ") });
+    }
+  }
+
+  /** recording -> transcribing. Used by the mic button, the send button and Enter. */
+  async function stopAndSend() {
+    const blob = await recorder.stop();
+    if (blob) sendVoice(blob);
+    else setPhase({ kind: "error", message: t("สั้นเกินไป แตะไมค์แล้วพูดอีกครั้งครับ") });
+  }
+
+  /** idle/error -> recording */
+  async function startRecording() {
+    setPhase({ kind: "idle" });
+    try {
+      await recorder.start();
+    } catch {
+      setPhase({ kind: "error", message: t("เปิดไมค์ไม่ได้ อนุญาตไมค์ในเบราว์เซอร์ก่อนครับ") });
+    }
+  }
+
+  /** The send button and Enter: send the recording if one is running, else the typed text. */
+  function submit() {
+    if (voice === "recording") stopAndSend();
+    else if (voice !== "transcribing") start(text);
+  }
+
   function onSubmit(e: FormEvent) {
     e.preventDefault();
-    start(text);
+    submit();
   }
 
   return (
@@ -96,7 +138,7 @@ export default function Landing() {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                   e.preventDefault();
-                  start(text);
+                  submit();
                 }
               }}
               maxLength={2000}
@@ -104,13 +146,52 @@ export default function Landing() {
               className="resize-none bg-transparent text-[17px] leading-relaxed outline-none placeholder:text-faint"
             />
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs text-faint">{t("ส่งแล้วจะเปิดแชทใหม่ให้ทันที")}</span>
-              <button type="submit" className="flex h-[46px] shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-basil pl-5 pr-4 font-semibold text-paper hover:bg-basil-dark">
-                {t("เริ่มแชท")}
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M5 12h14M13 6l6 6-6 6" />
-                </svg>
-              </button>
+              <VoiceStatus voice={voice} seconds={recorder.seconds} error={phase.kind === "error" ? phase.message : null} />
+              <div className="flex shrink-0 items-center gap-2">
+                {voice === "recording" && (
+                  <button
+                    type="button"
+                    onClick={() => recorder.cancel()}
+                    aria-label={t("ยกเลิกการอัด")}
+                    className="flex h-[46px] w-[46px] items-center justify-center rounded-full text-danger hover:bg-danger-soft"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+                    </svg>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={voice === "recording" ? stopAndSend : startRecording}
+                  disabled={voice === "transcribing"}
+                  aria-label={voice === "recording" ? t("หยุดอัดและส่งเสียง") : t("พูดกับ bot")}
+                  aria-pressed={voice === "recording"}
+                  className={`flex h-[46px] w-[46px] items-center justify-center rounded-full disabled:opacity-40 ${
+                    voice === "recording" ? "bg-danger text-paper" : "border border-line-strong text-ink hover:border-basil hover:bg-basil-soft hover:text-basil"
+                  }`}
+                >
+                  {voice === "recording" ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <rect x="6" y="6" width="12" height="12" rx="2.5" />
+                    </svg>
+                  ) : (
+                    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="9" y="3" width="6" height="11" rx="3" />
+                      <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+                    </svg>
+                  )}
+                </button>
+                <button
+                  type="submit"
+                  disabled={voice === "transcribing"}
+                  className="flex h-[46px] shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-basil pl-5 pr-4 font-semibold text-paper hover:bg-basil-dark disabled:opacity-40"
+                >
+                  {voice === "recording" ? t("ส่งเสียง") : t("เริ่มแชท")}
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M5 12h14M13 6l6 6-6 6" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </form>
 
@@ -178,4 +259,37 @@ export default function Landing() {
       </div>
     </div>
   );
+}
+
+/** The line left of the buttons: one message per voice state. */
+function VoiceStatus({ voice, seconds, error }: { voice: "idle" | "recording" | "transcribing" | "error"; seconds: number; error: string | null }) {
+  switch (voice) {
+    case "recording":
+      return (
+        <span role="status" aria-live="polite" className="flex min-w-0 items-center gap-2 text-sm">
+          <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-danger" />
+          <span className={`font-semibold tabular-nums ${seconds >= WARN_RECORD_S ? "text-danger" : "text-ink"}`}>
+            {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}
+          </span>
+          <span className={`truncate text-xs ${seconds >= WARN_RECORD_S ? "font-semibold text-danger" : "text-muted"}`}>
+            {seconds >= WARN_RECORD_S ? t("ส่งอัตโนมัติใน {s} วิ", { s: MAX_RECORD_S - seconds }) : t("กำลังฟัง กดส่งได้เลย")}
+          </span>
+        </span>
+      );
+    case "transcribing":
+      return (
+        <span role="status" className="flex items-center gap-2 text-xs text-muted">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-saffron" />
+          {t("กำลังถอดเสียง")}
+        </span>
+      );
+    case "error":
+      return (
+        <span role="alert" className="text-xs text-danger">
+          {error}
+        </span>
+      );
+    default:
+      return <span className="text-xs text-faint">{t("พิมพ์ หรือแตะไมค์เพื่อพูด")}</span>;
+  }
 }

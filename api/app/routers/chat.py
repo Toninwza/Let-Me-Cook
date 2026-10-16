@@ -12,6 +12,7 @@ from sqlmodel import Session, select
 from app import catalog
 from app.ai import run_agent
 from app.db import engine
+from app.i18n import detect, t
 from app.models import AppUser, ChatSession, Message
 from app.ratelimit import limit
 from app.schemas import HistoryMessage, UserProfile
@@ -112,6 +113,7 @@ def _sse(event: dict) -> str:
 async def _stream(session_id: str, text: str, profile: UserProfile, history: list[HistoryMessage]):
     bot_text: list[str] = []
     option_ids: list[str] = []
+    lang = detect(text)
     try:
         async with asyncio.timeout(AGENT_TIMEOUT_S):
             agent = run_agent(session_id, text, profile, history, catalog.today())
@@ -128,10 +130,10 @@ async def _stream(session_id: str, text: str, profile: UserProfile, history: lis
                         option_ids = [item["product_id"] for item in event.get("items", [])]
                     yield _sse(event)
     except TimeoutError:
-        yield _sse({"type": "error", "code": "timeout", "message": "bot ใช้เวลานานเกินไป ลองส่งใหม่อีกครั้งครับ"})
+        yield _sse({"type": "error", "code": "timeout", "message": t(lang, "timeout")})
     except Exception:
         log.exception("run_agent failed")
-        yield _sse({"type": "error", "code": "agent_failed", "message": "bot ขัดข้องชั่วคราว ลองส่งข้อความใหม่อีกครั้งครับ"})
+        yield _sse({"type": "error", "code": "agent_failed", "message": t(lang, "agent_failed")})
 
     if bot_text or option_ids:
         try:

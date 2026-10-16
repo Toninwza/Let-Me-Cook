@@ -68,6 +68,17 @@ class AppUser(SQLModel, table=True):
     discount_percent: int = 0
 
 
+class CartItem(SQLModel, table=True):
+    """One product in a user's cart. Price and stock are read from `product` when the cart is read."""
+
+    __tablename__ = "cart_item"
+
+    user_id: str = Field(foreign_key="app_user.id", primary_key=True)
+    product_id: str = Field(foreign_key="product.id", primary_key=True)
+    quantity: int = 1
+    created_at: datetime = Field(default_factory=utcnow)
+
+
 class ChatSession(SQLModel, table=True):
     __tablename__ = "chat_session"
 

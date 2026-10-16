@@ -113,7 +113,7 @@
         { "type": "agent_step", "step_id": "resolve", "label": "หาสินค้าที่เลือกจากรอบก่อน", "status": "running", "detail": null },
         { "type": "agent_step", "step_id": "resolve", "label": "หาสินค้าที่เลือกจากรอบก่อน", "status": "done", "detail": "เก้าอี้ทำงาน Ergonomic รุ่น Flex Pro สีดำ" },
         { "type": "message_delta", "text": "เปิดหน้า U-Pay ให้แล้วครับ ตรวจยอดก่อนกดยืนยันได้เลย" },
-        { "type": "checkout_request", "product_id": "p_chair_ergo_01", "quantity": 1 },
+        { "type": "checkout_request", "product_id": "p_chair_ergo_01", "quantity": 1, "payment_method": null },
         { "type": "done" }
       ]
     },

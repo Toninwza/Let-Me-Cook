@@ -161,7 +161,7 @@ export default function ShopOrders() {
           {orders !== null && shown.length === 0 && <p className="px-4 py-8 text-center text-sm text-muted">{t("ไม่มีออเดอร์ในสถานะนี้")}</p>}
           {orders === null && <p className="px-4 py-8 text-center text-sm text-muted">{t("กำลังโหลด")}</p>}
         </div>
-        <p className="text-[12.5px] text-muted">{t("กด \"จัดส่ง\" แล้วระบบสร้างเลขพัสดุให้ ลูกค้าเห็นในแชทและหน้าออเดอร์ทันที")}</p>
+        <p className="text-[12.5px] text-muted">{t("กด &quot;จัดส่ง&quot; แล้วระบบสร้างเลขพัสดุให้ ลูกค้าเห็นในแชทและหน้าออเดอร์ทันที")}</p>
       </main>
     </div>
   );

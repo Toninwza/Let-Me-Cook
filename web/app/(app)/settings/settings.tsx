@@ -47,7 +47,7 @@ export default function Settings() {
               );
             })}
           </div>
-          {lang === "en" && <p className="text-[12.5px] text-muted">{t("คำตอบของ bot ยังเป็นภาษาไทย")}</p>}
+          <p className="text-[12.5px] text-muted">{t("bot ตอบตามภาษาที่คุณพิมพ์")}</p>
         </section>
       </div>
     </div>

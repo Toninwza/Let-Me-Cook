@@ -163,6 +163,13 @@ async def speak(text: str) -> bytes: ...                                      # 
 it does not, the route adds one. If it raises, the route sends `error` then `done`.
 It uses Gemini (`GEMINI_MODEL`, default `gemini-2.5-flash`) and needs `GEMINI_API_KEY`.
 
+**Language:** every turn is answered in the language of the user's latest message, Thai or English
+(Thai script means Thai, Latin letters only means English, a message with neither keeps the
+previous language). That covers `agent_step` labels and details, `message_delta`, `clarify`, card
+`reason`s, no-result `reason` and `alternatives`, and the route's `error` messages. Product titles,
+categories and addresses are catalog data and stay Thai. `/voice/transcribe` detects Thai or
+English by itself; `/voice/speak` reads either. REST `detail` errors (orders, voice) stay Thai.
+
 ## Catalog interface (Python, `app.catalog`)
 
 The only way the AI module reads product data. All functions are async.
@@ -211,7 +218,7 @@ data: <the event dict as JSON, including "type">
 | `message_delta` | `text`: str | bot text, appended in order |
 | `clarify` | `question`: str, `choices`: list[str] (0 to 4 quick replies) | 2 (vague request) |
 | `options` | `items`: list[ProductOption] (0 to 3, or up to 12 when the user asks to see everything), `reason`: str or null, `alternatives`: list[str] | 4, must not break |
-| `checkout_request` | `product_id`: str, `quantity`: int | user typed "เอาตัวแรก": web opens U-Pay |
+| `checkout_request` | `product_id`: str, `quantity`: int, `payment_method`: `"promptpay"`, `"card"` or null | user typed "เอาตัวแรก": web opens U-Pay. With a `payment_method` ("เอาตัวแรก จ่ายด้วยบัตร", "สแกนจ่าย") the user already chose how to pay: one click, the web creates and confirms the order with that method and goes straight to the QR or the card page. Null: show the method picker as usual |
 | `error` | `code`: `"agent_failed"` / `"timeout"` / `"bad_input"` / `"internal"`, `message`: str (Thai, shown to user) | any |
 | `done` | nothing | ends every stream |
 
@@ -277,10 +284,29 @@ stock, 400 `avax_escrow`, 502 Stripe call failed (Thai `detail`).
 | POST | `/api/voice/enroll` | multipart `file` (audio) + `user_id` | reserved, not built yet |
 | POST | `/api/voice/verify` | multipart `file` (audio) + `user_id` | `{ "match": bool, "score": number }`. Reserved, not built yet |
 
+### [P2] cart
+
+The cart lives in the DB (table `cart_item`, one row per user and product). Price, discount, stock and
+delivery date are never stored in it: every read joins the current `product` row, so the cart is
+always up to date. A cart line is `{ "product": ProductHit, "quantity": int }`.
+
+| method | path | body | response |
+|---|---|---|---|
+| GET | `/api/users/{id}/cart` | | `list[CartLine]`, oldest first |
+| PUT | `/api/users/{id}/cart/{product_id}` | `{ "quantity": int }` (1 to 99) | the whole cart. Sets the quantity, and adds the product when it is not in the cart. The server caps it at `min(stock, 20)` (1 when out of stock, so the line stays visible as sold out) |
+| DELETE | `/api/users/{id}/cart/{product_id}` | | the whole cart. Removing a product that is not in the cart is fine |
+
+Errors: 404 unknown user or product.
+When an order turns `paid` (see Order above), its product is removed from that user's cart in the
+same transaction. Checkout itself is unchanged: one order per product, the cart only remembers what
+the user wants to buy.
+
 ## Web behavior [P2]
 
 - The order card in the chat polls `GET /api/orders/{id}` every 3 s and stops when the status is
   `delivered` or `cancelled`.
+- Every product card has an add-to-cart button next to the buy button. The cart sheet (header of the
+  chat) reads `GET /api/users/{id}/cart` and starts U-Pay for one line at a time.
 - It shows a three step bar: จ่ายแล้ว / กำลังจัดส่ง (with `tracking_number`) / ได้รับแล้ว.
 
 ## Security note

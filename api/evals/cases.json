@@ -176,7 +176,8 @@
       "expect": {
         "event": "checkout_request",
         "checkout_option": 1,
-        "quantity": 1
+        "quantity": 1,
+        "payment_method": null
       }
     },
     {
@@ -408,6 +409,145 @@
       "expect": {
         "event": "options",
         "no_repeat": true
+      }
+    },
+    {
+      "id": "pay_card",
+      "turns": [
+        "หาเก้าอี้ ergonomic งบ 3000",
+        "เอาตัวแรก จ่ายด้วยบัตร"
+      ],
+      "expect": {
+        "event": "checkout_request",
+        "checkout_option": 1,
+        "quantity": 1,
+        "payment_method": "card"
+      }
+    },
+    {
+      "id": "pay_promptpay",
+      "turns": [
+        "หาเก้าอี้ ergonomic งบ 3000",
+        "เอาตัวที่สอง สแกนจ่าย"
+      ],
+      "expect": {
+        "event": "checkout_request",
+        "checkout_option": 2,
+        "quantity": 1,
+        "payment_method": "promptpay"
+      }
+    },
+    {
+      "id": "pay_switch_method",
+      "turns": [
+        "หาเก้าอี้ ergonomic งบ 3000",
+        "เอาตัวแรก",
+        "ขอเปลี่ยนเป็นจ่ายด้วยบัตรแทน"
+      ],
+      "expect": {
+        "event": "checkout_request",
+        "checkout_option": 1,
+        "quantity": 1,
+        "payment_method": "card"
+      }
+    },
+    {
+      "id": "pay_crypto_unsupported",
+      "turns": [
+        "หาเก้าอี้ ergonomic งบ 3000",
+        "เอาตัวแรก จ่ายด้วยคริปโตได้ไหม"
+      ],
+      "expect": {
+        "event": "answer"
+      }
+    },
+    {
+      "id": "en_search_budget",
+      "turns": [
+        "I need an ergonomic chair for work, budget 3000 baht"
+      ],
+      "expect": {
+        "event": "options",
+        "include_any": [
+          "p_chair_ergo_01",
+          "p_chair_ergo_02",
+          "p_chair_ergo_03",
+          "p_chair_kneel_07"
+        ],
+        "max_price": 3000,
+        "lang": "en"
+      }
+    },
+    {
+      "id": "en_semantic_wrist",
+      "turns": [
+        "my wrist hurts from typing all day"
+      ],
+      "expect": {
+        "event": "options",
+        "include_any": [
+          "p_input_01",
+          "p_input_03"
+        ],
+        "lang": "en"
+      }
+    },
+    {
+      "id": "en_browse_clarify",
+      "turns": [
+        "what do you sell?"
+      ],
+      "expect": {
+        "event": "clarify",
+        "lang": "en"
+      }
+    },
+    {
+      "id": "en_show_everything",
+      "turns": [
+        "what do you sell?",
+        "just show me everything"
+      ],
+      "expect": {
+        "event": "options",
+        "min_items": 10,
+        "lang": "en"
+      }
+    },
+    {
+      "id": "en_pick_card",
+      "turns": [
+        "I need an ergonomic chair under 3000 baht",
+        "I'll take the first one, pay by card"
+      ],
+      "expect": {
+        "event": "checkout_request",
+        "checkout_option": 1,
+        "quantity": 1,
+        "payment_method": "card",
+        "lang": "en"
+      }
+    },
+    {
+      "id": "en_not_sold",
+      "turns": [
+        "do you have a washing machine?"
+      ],
+      "expect": {
+        "event": "options",
+        "max_items": 0,
+        "lang": "en"
+      }
+    },
+    {
+      "id": "en_compare",
+      "turns": [
+        "I need an ergonomic chair under 3000 baht",
+        "which is better for long hours, the first or the second?"
+      ],
+      "expect": {
+        "event": "answer",
+        "lang": "en"
       }
     }
   ]

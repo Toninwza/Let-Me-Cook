@@ -5,6 +5,7 @@ import { t } from "@/lib/i18n";
 import { useState } from "react";
 import type { ProductOption } from "@/lib/api";
 import { baht, shortDate } from "@/lib/format";
+import { useCart } from "@/lib/cart";
 import ProductThumb from "./product-thumb";
 
 type View = "cards" | "compare";
@@ -122,6 +123,7 @@ function Card({
           <span className="font-semibold">{t("ทำไม bot เลือก:")}</span> {item.reason}
         </p>
         <div className="mt-auto flex gap-2 pt-1">
+          <AddToCart item={item} className="h-11 w-11 shrink-0 rounded-xl" compact />
           <button
             disabled={disabled}
             onClick={() => onAsk(t("เล่ารายละเอียด {title} เพิ่มหน่อย", { title: item.title }))}
@@ -142,6 +144,39 @@ function Card({
         </div>
       </div>
     </article>
+  );
+}
+
+function AddToCart({ item, className, compact = false }: { item: ProductOption; className: string; compact?: boolean }) {
+  const { add, items } = useCart();
+  const qty = items.find((i) => i.product.product_id === item.product_id)?.quantity ?? 0;
+  const out = item.stock <= 0;
+  const label = qty > 0 ? t("ใส่ตะกร้าแล้ว {n} ชิ้น เพิ่มอีก", { n: qty }) : t("ใส่ตะกร้า");
+  return (
+    <button
+      onClick={() => add(item)}
+      disabled={out || qty >= Math.min(item.stock, 20)}
+      aria-label={`${label} ${item.title}`}
+      title={label}
+      className={`relative flex items-center justify-center border text-basil hover:bg-basil-soft disabled:opacity-40 ${qty > 0 ? "border-basil bg-basil-soft" : "border-line-strong hover:border-basil"} ${className}`}
+    >
+      <CartIcon />
+      {qty > 0 ? (
+        <span className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-basil px-1 text-[10.5px] font-bold text-paper">{qty}</span>
+      ) : (
+        !compact && <span className="ml-1.5 text-[13px] font-semibold">{t("ใส่ตะกร้า")}</span>
+      )}
+    </button>
+  );
+}
+
+export function CartIcon({ size = 19 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 4h2.5l2.2 10.5h9.6L19.5 8H6.4" />
+      <circle cx="9" cy="19" r="1.4" />
+      <circle cx="17" cy="19" r="1.4" />
+    </svg>
   );
 }
 
@@ -194,13 +229,16 @@ function Compare({ items, disabled, onBuy }: { items: ProductOption[]; disabled:
             <td />
             {items.map((i) => (
               <td key={i.product_id} className="p-2.5">
-                <button
-                  onClick={() => onBuy(i)}
-                  disabled={disabled || i.stock <= 0}
-                  className="h-9 w-full rounded-lg bg-basil text-[13px] font-semibold text-paper hover:bg-basil-dark disabled:opacity-40"
-                >
-                  {t("ซื้อ")}
-                </button>
+                <div className="flex flex-col gap-1.5">
+                  <AddToCart item={i} className="h-9 w-full rounded-lg" />
+                  <button
+                    onClick={() => onBuy(i)}
+                    disabled={disabled || i.stock <= 0}
+                    className="h-9 w-full rounded-lg bg-basil text-[13px] font-semibold text-paper hover:bg-basil-dark disabled:opacity-40"
+                  >
+                    {t("ซื้อ")}
+                  </button>
+                </div>
               </td>
             ))}
           </tr>

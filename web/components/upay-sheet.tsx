@@ -32,6 +32,7 @@ type Step = "summary" | "qr" | "paid";
 
 export default function UPaySheet({
   product,
+  initialQty = 1,
   resumeOrder,
   user,
   sessionId,
@@ -39,6 +40,7 @@ export default function UPaySheet({
   onPaid,
 }: {
   product: CheckoutProduct | null;
+  initialQty?: number;
   resumeOrder?: Order | null;
   user: UserProfile | null;
   sessionId: string | null;
@@ -46,7 +48,7 @@ export default function UPaySheet({
   onPaid?: (order: Order) => void;
 }) {
   const [step, setStep] = useState<Step>(resumeOrder ? "qr" : "summary");
-  const [qty, setQty] = useState(1);
+  const [qty, setQty] = useState(() => Math.max(1, Math.min(initialQty, product?.stock ?? 1, 20)));
   const [method, setMethod] = useState<PaymentMethod>("promptpay");
   const [order, setOrder] = useState<Order | null>(resumeOrder ?? null);
   const [busy, setBusy] = useState(false);

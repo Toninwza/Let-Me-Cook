@@ -150,6 +150,16 @@ export const getUser = (id: string) => call<UserProfile>(`/api/users/${id}`);
 export const updateUser = (id: string, body: { display_name?: string; full_name?: string; phone?: string; address?: Address }) =>
   call<UserProfile>(`/api/users/${id}`, { method: "PATCH", body: JSON.stringify(body) });
 
+export type CartLine = { product: ProductHit; quantity: number };
+
+export const getCart = (userId: string) => call<CartLine[]>(`/api/users/${userId}/cart`);
+
+export const setCartItem = (userId: string, productId: string, quantity: number) =>
+  call<CartLine[]>(`/api/users/${userId}/cart/${productId}`, { method: "PUT", body: JSON.stringify({ quantity }) });
+
+export const removeCartItem = (userId: string, productId: string) =>
+  call<CartLine[]>(`/api/users/${userId}/cart/${productId}`, { method: "DELETE" });
+
 export const listProducts = (shopId?: string) =>
   call<ProductHit[]>(`/api/products${shopId ? `?shop_id=${encodeURIComponent(shopId)}` : ""}`);
 
