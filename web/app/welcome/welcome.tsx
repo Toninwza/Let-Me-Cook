@@ -15,7 +15,7 @@ import Magnet from "@/components/magnet";
 /** Shown once after sign-up: a nickname for the bot and the shipping address. Both can be skipped. */
 export default function Welcome() {
   const router = useRouter();
-  const { name } = useAuth();
+  const { name, setProfileName } = useAuth();
   const [nick, setNick] = useState<string | null>(null);
   const [address, setAddress] = useState(normalizeAddress(null));
   const [contact, setContact] = useState(normalizeContact(null));
@@ -48,7 +48,8 @@ export default function Welcome() {
     setBusy(true);
     setError(null);
     try {
-      await updateUser(DEMO_USER_ID, { display_name: nickname.trim(), ...contactPayload(contact), address: normalizeAddress(address) });
+      const next = await updateUser(DEMO_USER_ID, { display_name: nickname.trim(), ...contactPayload(contact), address: normalizeAddress(address) });
+      setProfileName(next.display_name);
       router.push("/");
     } catch (err) {
       setError(err instanceof ApiError && err.status !== 404 && err.status !== 405 ? err.message : t("บันทึกไม่สำเร็จ ลองใหม่ หรือกดข้ามไปก่อน"));

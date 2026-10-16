@@ -12,7 +12,7 @@ import AddressFields, { Field } from "@/components/address-fields";
 import RecipientFields from "@/components/recipient-fields";
 
 export default function Account() {
-  const { session, email } = useAuth();
+  const { session, email, setProfileName } = useAuth();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [name, setName] = useState("");
   const [address, setAddress] = useState(normalizeAddress(null));
@@ -49,6 +49,7 @@ export default function Account() {
     try {
       const next = await updateUser(DEMO_USER_ID, { display_name: name.trim(), ...contactPayload(contact), address: normalizeAddress(address) });
       setUser(next);
+      setProfileName(next.display_name);
       setSaved(true);
     } catch (e) {
       setSaved(false);
