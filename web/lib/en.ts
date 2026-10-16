@@ -333,4 +333,16 @@ export const EN: Record<string, string> = {
   "พิมพ์ หรือแตะไมค์เพื่อพูด": "Type, or tap the mic to talk",
   "สั้นเกินไป แตะไมค์แล้วพูดอีกครั้งครับ": "Too short. Tap the mic and speak again.",
   "ม": "M",
+  // calendar
+  "ปฏิทิน": "Calendar",
+  "ปฏิทินสั่งซื้อ": "Order calendar",
+  "ถึงวันนี้": "Arrives today",
+  "ถึงพรุ่งนี้": "Arrives tomorrow",
+  "ถึงอีก {n} วัน": "Arrives in {n} days",
+  "เลยกำหนดมา {n} วัน": "{n} days late",
+  "เดือนก่อน": "Previous month",
+  "เดือนถัดไป": "Next month",
+  "ไม่มีของถึงวันนี้": "Nothing arriving this day",
+  "กำลังจะถึง": "Coming up",
+  "ยังไม่มีของที่รอส่ง": "Nothing on the way",
 };
