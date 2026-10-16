@@ -1,5 +1,7 @@
 "use client";
 
+import { t } from "@/lib/i18n";
+
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -86,7 +88,7 @@ export default function Chat() {
       setSessionId(s.session_id);
       setUser(s.user);
     } catch {
-      setSessionError("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้");
+      setSessionError(t("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้"));
     }
   }, []);
 
@@ -145,7 +147,7 @@ export default function Chat() {
           updateBot((turn) => applyEvent(turn, event));
         }
       } catch {
-        updateBot((turn) => ({ ...turn, error: "การเชื่อมต่อขาดหาย ลองส่งใหม่อีกครั้งครับ" }));
+        updateBot((turn) => ({ ...turn, error: t("การเชื่อมต่อขาดหาย ลองส่งใหม่อีกครั้งครับ") }));
       } finally {
         updateBot((turn) => ({ ...turn, done: true, seconds: (Date.now() - turn.startedAt) / 1000 }));
         setBusy(false);
@@ -194,7 +196,7 @@ export default function Chat() {
     }
     const blob = await recorder.stop();
     if (blob) submitVoice(blob);
-    else setMicError("สั้นเกินไป กดค้างไว้แล้วพูดครับ");
+    else setMicError(t("สั้นเกินไป กดค้างไว้แล้วพูดครับ"));
   }
 
   async function micDown(e: React.PointerEvent<HTMLButtonElement>) {
@@ -212,7 +214,7 @@ export default function Chat() {
       await recorder.start();
     } catch {
       press.current = null;
-      setMicError("เปิดไมค์ไม่ได้ อนุญาตไมค์ในเบราว์เซอร์ก่อนครับ");
+      setMicError(t("เปิดไมค์ไม่ได้ อนุญาตไมค์ในเบราว์เซอร์ก่อนครับ"));
       return;
     }
     // Released before the mic was ready (permission prompt): behave like a tap.
@@ -256,7 +258,7 @@ export default function Chat() {
       recorder
         .start()
         .then(() => setMode("tap"))
-        .catch(() => setMicError("เปิดไมค์ไม่ได้ อนุญาตไมค์ในเบราว์เซอร์ก่อนครับ"));
+        .catch(() => setMicError(t("เปิดไมค์ไม่ได้ อนุญาตไมค์ในเบราว์เซอร์ก่อนครับ")));
     }
   }
 
@@ -280,7 +282,7 @@ export default function Chat() {
           <div className="text-[15px] font-semibold md:text-lg md:font-bold">Chatbot</div>
           <div className="flex items-center gap-1.5 text-xs text-muted">
             <span className="h-1.5 w-1.5 rounded-full bg-basil" />
-            ค้นจากร้านบนแพลตฟอร์ม
+            {t("ค้นจากร้านบนแพลตฟอร์ม")}
           </div>
         </div>
         <button
@@ -291,7 +293,7 @@ export default function Chat() {
             if (!next) botVoice.stop();
           }}
           aria-pressed={voiceOn}
-          aria-label={voiceOn ? "ปิดเสียง bot" : "ให้ bot พูดตอบ"}
+          aria-label={voiceOn ? t("ปิดเสียง bot") : t("ให้ bot พูดตอบ")}
           className={`flex h-11 w-11 items-center justify-center rounded-xl ${voiceOn ? "bg-basil-soft text-basil" : "text-ink hover:bg-ground"}`}
         >
           <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -299,7 +301,7 @@ export default function Chat() {
             {voiceOn ? <path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" /> : <path d="M17 9l5 6M22 9l-5 6" />}
           </svg>
         </button>
-        <Link href="/orders" aria-label="ออเดอร์ของฉัน" className="flex h-11 w-11 items-center justify-center rounded-xl text-ink hover:bg-ground">
+        <Link href="/orders" aria-label={t("ออเดอร์ของฉัน")} className="flex h-11 w-11 items-center justify-center rounded-xl text-ink hover:bg-ground">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M6 8h12l-1 12H7L6 8z" />
             <path d="M9 8a3 3 0 0 1 6 0" />
@@ -313,7 +315,7 @@ export default function Chat() {
           <div className="rounded-xl bg-danger-soft p-3 text-sm text-danger">
             {sessionError}{" "}
             <button className="underline" onClick={startSession}>
-              ลองใหม่
+              {t("ลองใหม่")}
             </button>
           </div>
         )}
@@ -322,18 +324,18 @@ export default function Chat() {
           <div className="flex flex-col items-center gap-4 pt-10 text-center">
             <Magnet size={56} />
             <div>
-              <h1 className="font-display text-xl font-semibold">{user ? `สวัสดี ${user.display_name}` : "สวัสดี"}</h1>
-              <p className="mt-1 text-sm text-muted">บอกครั้งเดียวว่าอยากได้อะไร bot จะคัดให้ 3 ตัว</p>
+              <h1 className="font-display text-xl font-semibold">{user ? t("สวัสดี {name}", { name: user.display_name }) : t("สวัสดี")}</h1>
+              <p className="mt-1 text-sm text-muted">{t("บอกครั้งเดียวว่าอยากได้อะไร bot จะคัดให้ 3 ตัว")}</p>
             </div>
             <div className="flex w-full flex-col gap-2">
               {STARTERS.map((s) => (
                 <button
                   key={s}
                   disabled={!sessionId}
-                  onClick={() => send(s)}
+                  onClick={() => send(t(s))}
                   className="min-h-11 rounded-xl border border-line bg-paper px-3.5 py-2 text-left text-[13.5px] hover:border-basil disabled:opacity-40"
                 >
-                  {s}
+                  {t(s)}
                 </button>
               ))}
             </div>
@@ -347,13 +349,13 @@ export default function Chat() {
                 {turn.voice === "transcribing" ? (
                   <p className="flex max-w-[85%] items-center gap-2 rounded-[18px] rounded-br-md bg-ink px-3.5 py-2.5 text-sm text-paper/80">
                     <span className="h-2 w-2 animate-pulse rounded-full bg-saffron" />
-                    กำลังถอดเสียง
+                    {t("กำลังถอดเสียง")}
                   </p>
                 ) : (
                   <div className="flex max-w-[85%] items-center gap-2.5 rounded-[18px] rounded-br-md border border-danger/40 bg-danger-soft px-3.5 py-2.5 text-sm text-danger">
-                    ฟังเสียงไม่ออก
+                    {t("ฟังเสียงไม่ออก")}
                     <button onClick={() => retryVoice(turn)} className="rounded-full bg-danger px-3 py-1 text-[12.5px] font-semibold text-paper">
-                      ลองส่งใหม่
+                      {t("ลองส่งใหม่")}
                     </button>
                   </div>
                 )}
@@ -381,7 +383,7 @@ export default function Chat() {
                 <button
                   type="button"
                   onClick={() => endRecording(false)}
-                  aria-label="ยกเลิกการอัด"
+                  aria-label={t("ยกเลิกการอัด")}
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-danger hover:bg-danger-soft"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -400,24 +402,24 @@ export default function Chat() {
               </div>
               <span className={`hidden shrink-0 text-[12.5px] sm:block ${armed === "cancel" || recorder.seconds >= WARN_RECORD_S ? "font-semibold text-danger" : "text-muted"}`}>
                 {recorder.seconds >= WARN_RECORD_S
-                  ? `ส่งอัตโนมัติใน ${MAX_RECORD_S - recorder.seconds} วิ`
+                  ? t("ส่งอัตโนมัติใน {s} วิ", { s: MAX_RECORD_S - recorder.seconds })
                   : micMode === "hold"
                     ? armed === "cancel"
-                      ? "ปล่อยเพื่อยกเลิก"
-                      : "เลื่อนซ้ายยกเลิก, ขึ้นเพื่อล็อก"
+                      ? t("ปล่อยเพื่อยกเลิก")
+                      : t("เลื่อนซ้ายยกเลิก, ขึ้นเพื่อล็อก")
                     : ""}
               </span>
             </div>
           ) : (
             <>
               <label htmlFor="chat-input" className="sr-only">
-                ข้อความถึง bot
+                {t("ข้อความถึง bot")}
               </label>
               <input
                 id="chat-input"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="พิมพ์ หรือกดไมค์ค้างไว้เพื่อพูด"
+                placeholder={t("พิมพ์ หรือกดไมค์ค้างไว้เพื่อพูด")}
                 maxLength={2000}
                 disabled={!sessionId}
                 className="h-11 min-w-0 flex-1 rounded-full border border-line-strong bg-ground px-4 text-sm outline-none focus:border-basil"
@@ -434,7 +436,7 @@ export default function Chat() {
               onContextMenu={(e) => e.preventDefault()}
               onClick={(e) => e.detail === 0 && micKey()}
               disabled={!recorder.recording && (!sessionId || busy)}
-              aria-label={micMode === "tap" ? "ส่งเสียง" : "กดค้างเพื่อพูด หรือแตะเพื่ออัดแบบไม่ต้องถือ"}
+              aria-label={micMode === "tap" ? t("ส่งเสียง") : t("กดค้างเพื่อพูด หรือแตะเพื่ออัดแบบไม่ต้องถือ")}
               className={`flex shrink-0 touch-none select-none items-center justify-center rounded-full transition-all disabled:opacity-40 ${
                 micMode === "hold"
                   ? `h-14 w-14 ${armed === "cancel" ? "bg-ink" : "bg-danger"} text-paper shadow-lg`
@@ -457,7 +459,7 @@ export default function Chat() {
           ) : (
             <button
               type="submit"
-              aria-label="ส่งข้อความ"
+              aria-label={t("ส่งข้อความ")}
               disabled={!sessionId || busy}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-basil text-paper hover:bg-basil-dark disabled:opacity-40"
             >
@@ -499,7 +501,7 @@ function BotMessage({
       {waiting && (
         <div className="flex items-center gap-2 text-sm text-muted">
           <span className="h-2 w-2 animate-pulse rounded-full bg-saffron" />
-          bot กำลังอ่านความต้องการ
+          {t("bot กำลังอ่านความต้องการ")}
         </div>
       )}
       {turn.steps.length > 0 && <StepsPanel steps={turn.steps} finished={turn.done} seconds={turn.seconds} />}
@@ -528,9 +530,9 @@ function BotMessage({
       )}
 
       {turn.options && turn.options.items.length === 0 && (
-        <section aria-label="ไม่พบสินค้าที่ตรงเงื่อนไข" className="space-y-2.5 rounded-2xl border border-[#F0D7A6] bg-[#FFF6E5] p-3.5">
-          <p className="text-[13.5px] text-[#2B1C00]">{turn.options.reason ?? "ไม่เจอสินค้าที่ตรงเงื่อนไข"}</p>
-          <div className="text-xs font-semibold text-saffron-ink">ลองแบบนี้ไหม</div>
+        <section aria-label={t("ไม่พบสินค้าที่ตรงเงื่อนไข")} className="space-y-2.5 rounded-2xl border border-[#F0D7A6] bg-[#FFF6E5] p-3.5">
+          <p className="text-[13.5px] text-[#2B1C00]">{turn.options.reason ?? t("ไม่เจอสินค้าที่ตรงเงื่อนไข")}</p>
+          <div className="text-xs font-semibold text-saffron-ink">{t("ลองแบบนี้ไหม")}</div>
           <div className="flex flex-col gap-2">
             {turn.options.alternatives.map((a) => (
               <button

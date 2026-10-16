@@ -1,5 +1,7 @@
 "use client";
 
+import { t } from "@/lib/i18n";
+
 import { useId } from "react";
 import type { Address } from "@/lib/api";
 
@@ -11,19 +13,19 @@ export default function AddressFields({ value, onChange }: { value: Address; onC
   const set = (key: keyof Address) => (e: React.ChangeEvent<HTMLInputElement>) => onChange({ ...value, [key]: e.target.value });
   return (
     <div className="flex flex-col gap-3">
-      <Field label="บ้านเลขที่ ซอย ถนน" htmlFor={`${id}-line`}>
+      <Field label={t("บ้านเลขที่ ซอย ถนน")} htmlFor={`${id}-line`}>
         <input id={`${id}-line`} autoComplete="street-address" value={value.line} onChange={set("line")} maxLength={200} className={INPUT} />
       </Field>
       <div className="flex gap-3">
-        <Field label="เขต / อำเภอ" htmlFor={`${id}-district`}>
+        <Field label={t("เขต / อำเภอ")} htmlFor={`${id}-district`}>
           <input id={`${id}-district`} value={value.district} onChange={set("district")} maxLength={80} className={INPUT} />
         </Field>
-        <Field label="จังหวัด" htmlFor={`${id}-province`}>
+        <Field label={t("จังหวัด")} htmlFor={`${id}-province`}>
           <input id={`${id}-province`} value={value.province} onChange={set("province")} maxLength={80} className={INPUT} />
         </Field>
       </div>
       <div className="w-full sm:w-[200px]">
-        <Field label="รหัสไปรษณีย์" htmlFor={`${id}-postcode`}>
+        <Field label={t("รหัสไปรษณีย์")} htmlFor={`${id}-postcode`}>
           <input
             id={`${id}-postcode`}
             inputMode="numeric"

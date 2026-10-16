@@ -1,5 +1,7 @@
 "use client";
 
+import { t } from "@/lib/i18n";
+
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,14 +18,14 @@ type Mode = "in" | "up";
 /** Supabase error messages are English; show the ones a user can act on in Thai. */
 function thaiError(message: string): string {
   const m = message.toLowerCase();
-  if (m.includes("invalid login")) return "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
-  if (m.includes("already registered") || m.includes("already been registered")) return "อีเมลนี้สมัครไว้แล้ว ลองเข้าสู่ระบบแทน";
-  if (m.includes("password") && m.includes("characters")) return "รหัสผ่านสั้นเกินไป ใช้อย่างน้อย 8 ตัวอักษร";
-  if (m.includes("rate limit") || m.includes("too many")) return "ลองบ่อยเกินไป รอสักครู่แล้วลองใหม่";
-  if (m.includes("email not confirmed")) return "ยังไม่ได้ยืนยันอีเมล เช็คกล่องจดหมายของคุณ";
-  if (m.includes("provider is not enabled") || m.includes("unsupported provider")) return "ยังไม่ได้เปิดการเข้าสู่ระบบด้วย Google";
-  if (m.includes("invalid email")) return "รูปแบบอีเมลไม่ถูกต้อง";
-  return `เข้าสู่ระบบไม่สำเร็จ (${message})`;
+  if (m.includes("invalid login")) return t("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+  if (m.includes("already registered") || m.includes("already been registered")) return t("อีเมลนี้สมัครไว้แล้ว ลองเข้าสู่ระบบแทน");
+  if (m.includes("password") && m.includes("characters")) return t("รหัสผ่านสั้นเกินไป ใช้อย่างน้อย 8 ตัวอักษร");
+  if (m.includes("rate limit") || m.includes("too many")) return t("ลองบ่อยเกินไป รอสักครู่แล้วลองใหม่");
+  if (m.includes("email not confirmed")) return t("ยังไม่ได้ยืนยันอีเมล เช็คกล่องจดหมายของคุณ");
+  if (m.includes("provider is not enabled") || m.includes("unsupported provider")) return t("ยังไม่ได้เปิดการเข้าสู่ระบบด้วย Google");
+  if (m.includes("invalid email")) return t("รูปแบบอีเมลไม่ถูกต้อง");
+  return t("เข้าสู่ระบบไม่สำเร็จ ({message})", { message });
 }
 
 export default function Login() {
@@ -72,7 +74,7 @@ export default function Login() {
     setBusy(false);
     if (error) setError(thaiError(error.message));
     else if (data.session) router.push("/welcome");
-    else setNotice("สมัครแล้ว ส่งลิงก์ยืนยันไปที่อีเมลของคุณ กดลิงก์แล้วกลับมาเข้าสู่ระบบได้เลย");
+    else setNotice(t("สมัครแล้ว ส่งลิงก์ยืนยันไปที่อีเมลของคุณ กดลิงก์แล้วกลับมาเข้าสู่ระบบได้เลย"));
   }
 
   async function google() {
@@ -84,11 +86,11 @@ export default function Login() {
 
   async function forgot() {
     if (!supabase) return;
-    if (!email.trim()) return setError("กรอกอีเมลก่อน แล้วกดลืมรหัสผ่านอีกครั้ง");
+    if (!email.trim()) return setError(t("กรอกอีเมลก่อน แล้วกดลืมรหัสผ่านอีกครั้ง"));
     setError(null);
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/login` });
     if (error) setError(thaiError(error.message));
-    else setNotice("ส่งลิงก์ตั้งรหัสผ่านใหม่ไปที่อีเมลแล้ว");
+    else setNotice(t("ส่งลิงก์ตั้งรหัสผ่านใหม่ไปที่อีเมลแล้ว"));
   }
 
   const inputCls =
@@ -137,7 +139,7 @@ export default function Login() {
             <br />
             <span className="text-saffron">Everything you want</span>
           </div>
-          <div className="text-sm text-[#A9C9B8]">บอกครั้งเดียว bot ดึงของจากร้านบนแพลตฟอร์ม คัดให้ 3 ตัว แล้วจ่ายจบในแชท</div>
+          <div className="text-sm text-[#A9C9B8]">{t("บอกครั้งเดียว bot ดึงของจากร้านบนแพลตฟอร์ม คัดให้ 3 ตัว แล้วจ่ายจบในแชท")}</div>
         </div>
       </section>
 
@@ -145,16 +147,16 @@ export default function Login() {
         <div className="flex w-full max-w-[392px] flex-col gap-4 lg:gap-5">
           <div>
             <h1 className="font-display text-[22px] font-semibold tracking-[-0.01em] lg:text-[28px]">
-              {session ? "เข้าสู่ระบบอยู่แล้ว" : mode === "in" ? "ยินดีต้อนรับกลับมา" : "สร้างบัญชี PULL"}
+              {session ? t("เข้าสู่ระบบอยู่แล้ว") : mode === "in" ? t("ยินดีต้อนรับกลับมา") : t("สร้างบัญชี PULL")}
             </h1>
             <p className="mt-1 text-[13.5px] text-ink-2 lg:text-sm">
-              {session ? "bot จะจำที่อยู่และประวัติการซื้อของคุณ" : mode === "in" ? "เข้าสู่ระบบเพื่อให้ bot จำที่อยู่และประวัติการซื้อของคุณ" : "ใช้เวลาไม่ถึงนาที"}
+              {session ? t("bot จะจำที่อยู่และประวัติการซื้อของคุณ") : mode === "in" ? t("เข้าสู่ระบบเพื่อให้ bot จำที่อยู่และประวัติการซื้อของคุณ") : t("ใช้เวลาไม่ถึงนาที")}
             </p>
           </div>
 
           {!configured && (
             <p className="rounded-xl bg-saffron-soft px-3.5 py-2.5 text-[13px] text-saffron-ink">
-              ยังไม่ได้ตั้งค่า Supabase ในเว็บ (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY) ตอนนี้ใช้แบบผู้ใช้เดโมได้
+              {t("ยังไม่ได้ตั้งค่า Supabase ในเว็บ (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY) ตอนนี้ใช้แบบผู้ใช้เดโมได้")}
             </p>
           )}
 
@@ -168,15 +170,15 @@ export default function Login() {
                 </div>
               </div>
               <Link href="/" className="flex h-[50px] items-center justify-center rounded-[14px] bg-basil font-semibold text-paper hover:bg-basil-dark">
-                ไปหน้าแรก
+                {t("ไปหน้าแรก")}
               </Link>
               <button onClick={signOut} className="h-11 rounded-xl text-sm text-muted underline hover:text-ink">
-                ออกจากระบบ
+                {t("ออกจากระบบ")}
               </button>
             </div>
           ) : (
             <>
-              <div role="tablist" aria-label="เลือกโหมด" className="grid grid-cols-2 gap-1 rounded-[14px] bg-[#ECEFEA] p-1">
+              <div role="tablist" aria-label={t("เลือกโหมด")} className="grid grid-cols-2 gap-1 rounded-[14px] bg-[#ECEFEA] p-1">
                 {(["in", "up"] as const).map((m) => (
                   <button
                     key={m}
@@ -185,7 +187,7 @@ export default function Login() {
                     onClick={() => switchMode(m)}
                     className={`h-10 rounded-[11px] text-sm font-semibold lg:h-[42px] ${mode === m ? "bg-paper text-ink shadow-[0_1px_3px_rgba(23,33,29,0.12)]" : "text-muted hover:text-ink"}`}
                   >
-                    {m === "in" ? "เข้าสู่ระบบ" : "สมัครสมาชิก"}
+                    {m === "in" ? t("เข้าสู่ระบบ") : t("สมัครสมาชิก")}
                   </button>
                 ))}
               </div>
@@ -197,12 +199,12 @@ export default function Login() {
                 className="flex h-[50px] items-center justify-center gap-3 rounded-[14px] border-[1.5px] border-line-strong bg-paper text-[15px] font-semibold hover:border-basil hover:bg-[#F7FAF8] disabled:opacity-50 lg:h-[52px]"
               >
                 <span className="flex h-6 w-6 items-center justify-center rounded-full border-[1.5px] border-ink text-[13px] font-bold">G</span>
-                ดำเนินการต่อด้วย Google
+                {t("ดำเนินการต่อด้วย Google")}
               </button>
 
               <div className="flex items-center gap-3 text-[12.5px] text-faint">
                 <span className="h-px flex-1 bg-[#DDE2DE]" />
-                หรือใช้อีเมล
+                {t("หรือใช้อีเมล")}
                 <span className="h-px flex-1 bg-[#DDE2DE]" />
               </div>
 
@@ -210,25 +212,25 @@ export default function Login() {
                 {mode === "up" && (
                   <div className="flex flex-col gap-1.5">
                     <label htmlFor="login-name" className="text-[13px] font-semibold">
-                      ชื่อที่ให้ bot เรียก
+                      {t("ชื่อที่ให้ bot เรียก")}
                     </label>
-                    <input id="login-name" autoComplete="given-name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} disabled={!configured} placeholder="เช่น มิ้นท์" className={inputCls} />
+                    <input id="login-name" autoComplete="given-name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} disabled={!configured} placeholder={t("เช่น มิ้นท์")} className={inputCls} />
                   </div>
                 )}
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="login-email" className="text-[13px] font-semibold">
-                    อีเมล
+                    {t("อีเมล")}
                   </label>
                   <input id="login-email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={!configured} placeholder="you@example.com" className={inputCls} />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-baseline justify-between">
                     <label htmlFor="login-pass" className="text-[13px] font-semibold">
-                      รหัสผ่าน
+                      {t("รหัสผ่าน")}
                     </label>
                     {mode === "in" && (
                       <button type="button" onClick={forgot} className="text-[12.5px] text-basil hover:text-basil-dark hover:underline">
-                        ลืมรหัสผ่าน
+                        {t("ลืมรหัสผ่าน")}
                       </button>
                     )}
                   </div>
@@ -242,13 +244,13 @@ export default function Login() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       disabled={!configured}
-                      placeholder="อย่างน้อย 8 ตัวอักษร"
+                      placeholder={t("อย่างน้อย 8 ตัวอักษร")}
                       className={`${inputCls} pr-[52px]`}
                     />
                     <button
                       type="button"
                       onClick={() => setShow((v) => !v)}
-                      aria-label={show ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+                      aria-label={show ? t("ซ่อนรหัสผ่าน") : t("แสดงรหัสผ่าน")}
                       aria-pressed={show}
                       className="absolute right-1.5 top-1.5 flex h-10 w-10 items-center justify-center rounded-[10px] text-muted hover:bg-ground hover:text-ink lg:top-2"
                     >
@@ -261,7 +263,7 @@ export default function Login() {
                   </div>
                 </div>
                 <button type="submit" disabled={!configured || busy || loading} className="mt-1 h-[50px] rounded-[14px] bg-basil text-[15.5px] font-semibold text-paper hover:bg-basil-dark disabled:opacity-50 lg:h-[52px]">
-                  {busy ? "กำลังดำเนินการ" : mode === "in" ? "เข้าสู่ระบบ" : "สมัครสมาชิก"}
+                  {busy ? t("กำลังดำเนินการ") : mode === "in" ? t("เข้าสู่ระบบ") : t("สมัครสมาชิก")}
                 </button>
               </form>
             </>
@@ -274,9 +276,9 @@ export default function Login() {
 
           <div className="flex flex-col items-center gap-1">
             <Link href="/" className="flex min-h-10 items-center text-[13.5px] text-ink-2 underline hover:text-basil">
-              ลองใช้แบบผู้ใช้เดโม่
+              {t("ลองใช้แบบผู้ใช้เดโม่")}
             </Link>
-            <span className="text-[11.5px] text-faint">การเข้าสู่ระบบดูแลโดย Supabase Auth</span>
+            <span className="text-[11.5px] text-faint">{t("การเข้าสู่ระบบดูแลโดย Supabase Auth")}</span>
           </div>
         </div>
       </main>

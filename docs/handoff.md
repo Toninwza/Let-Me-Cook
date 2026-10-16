@@ -196,6 +196,16 @@ friend can make (`api/app/models.py`, see AGENTS.md "Schema"):
 > กับเบอร์ไปเก็บในออเดอร์ (recipient_name, recipient_phone) เหมือนที่เก็บ address ไว้ เพื่อให้ร้านเห็น
 > ว่าส่งให้ใครและโทรหาเบอร์ไหน (ถ้า `init_db` เพิ่มคอลัมน์ nullable ให้เองอยู่แล้วก็ไม่ต้องลบตาราง)
 
+### English version (branch feat/eng, uncommitted until approved)
+`web/lib/i18n.tsx` (`t()`, language provider, stored in localStorage `pull-lang`) and `web/lib/en.ts`
+(English for every Thai string; the Thai text in the code is the key). Language is chosen in `/settings`.
+Not translated: product titles, categories and shop names (they come from the database), and the bot's
+own replies and step labels (they come from the API). For English bot replies the friend would add a
+`lang` field to `POST /sessions` (or to each message) and pass it to the Gemini prompt:
+> ขอเพิ่ม field `lang` ("th" | "en") ใน `POST /sessions` ให้ bot ตอบเป็นภาษานั้น และให้ `agent_step.label`
+> เป็นภาษาเดียวกันด้วย (ถ้าไม่ส่ง ใช้ th)
+When adding UI text: write Thai in `t("...")`, then add the English line to `en.ts`.
+
 ## 8. The design canvas (optional reference)
 
 Private Claude Design artifact: https://claude.ai/artifact/NXeHTM7Xw4sWym3FcQreMY

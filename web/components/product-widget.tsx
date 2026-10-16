@@ -1,5 +1,7 @@
 "use client";
 
+import { t } from "@/lib/i18n";
+
 import { useState } from "react";
 import type { ProductOption } from "@/lib/api";
 import { baht, shortDate } from "@/lib/format";
@@ -20,14 +22,14 @@ export default function ProductWidget({
 }) {
   const [view, setView] = useState<View>("cards");
 
-  const followUps = ["ถูกกว่านี้", "ส่งเร็วกว่านี้", ...(items.length > 1 ? ["เทียบตัวที่ 1 กับ 2 ให้หน่อย"] : [])];
+  const followUps = [t("ถูกกว่านี้"), t("ส่งเร็วกว่านี้"), ...(items.length > 1 ? [t("เทียบตัวที่ 1 กับ 2 ให้หน่อย")] : [])];
 
   return (
-    <section aria-label="สินค้าที่ bot แนะนำ" className="space-y-3">
+    <section aria-label={t("สินค้าที่ bot แนะนำ")} className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">bot แนะนำ {items.length} ตัว</h3>
+        <h3 className="text-sm font-semibold">{t("bot แนะนำ {n} ตัว", { n: items.length })}</h3>
         {items.length > 1 && (
-          <div role="tablist" aria-label="มุมมอง" className="flex rounded-full bg-line/60 p-0.5 text-xs font-semibold">
+          <div role="tablist" aria-label={t("มุมมอง")} className="flex rounded-full bg-line/60 p-0.5 text-xs font-semibold">
             {(["cards", "compare"] as const).map((v) => (
               <button
                 key={v}
@@ -36,7 +38,7 @@ export default function ProductWidget({
                 onClick={() => setView(v)}
                 className={`h-8 rounded-full px-3 ${view === v ? "bg-paper text-ink shadow-sm" : "text-muted hover:text-ink"}`}
               >
-                {v === "cards" ? "การ์ด" : "เทียบ"}
+                {v === "cards" ? t("การ์ด") : t("เทียบ")}
               </button>
             ))}
           </div>
@@ -88,7 +90,7 @@ function Card({
         <ProductThumb imageUrl={item.image_url} category={item.category} className="h-32 w-full" />
         {rank === 1 && (
           <span className="absolute left-2.5 top-2.5 rounded-full bg-ink px-2.5 py-0.5 text-[11px] font-semibold text-paper">
-            เหมาะสุด
+            {t("เหมาะสุด")}
           </span>
         )}
         {item.discount_percent > 0 && (
@@ -117,13 +119,13 @@ function Card({
           {item.discount_percent > 0 && <s className="text-xs text-faint">{baht(item.original_price)}</s>}
         </div>
         <p className="rounded-xl bg-basil-soft/70 px-2.5 py-2 text-[12.5px] leading-relaxed text-[#17402F]">
-          <span className="font-semibold">ทำไม bot เลือก:</span> {item.reason}
+          <span className="font-semibold">{t("ทำไม bot เลือก:")}</span> {item.reason}
         </p>
         <div className="mt-auto flex gap-2 pt-1">
           <button
             disabled={disabled}
-            onClick={() => onAsk(`เล่ารายละเอียด ${item.title} เพิ่มหน่อย`)}
-            aria-label={`ถาม bot เรื่อง ${item.title}`}
+            onClick={() => onAsk(t("เล่ารายละเอียด {title} เพิ่มหน่อย", { title: item.title }))}
+            aria-label={t("ถาม bot เรื่อง {title}", { title: item.title })}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line-strong text-basil hover:border-basil hover:bg-basil-soft disabled:opacity-40"
           >
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -135,7 +137,7 @@ function Card({
             disabled={item.stock <= 0}
             className="h-11 flex-1 rounded-xl bg-basil text-[15px] font-semibold text-paper hover:bg-basil-dark disabled:opacity-40"
           >
-            {item.stock > 0 ? "ซื้อสินค้า" : "สินค้าหมด"}
+            {item.stock > 0 ? t("ซื้อสินค้า") : t("สินค้าหมด")}
           </button>
         </div>
       </div>
@@ -149,12 +151,12 @@ function Compare({ items, disabled, onBuy }: { items: ProductOption[]; disabled:
   const earliest = items.map((i) => i.delivery_date).sort()[0];
 
   const rows: { label: string; cell: (i: ProductOption) => React.ReactNode; best?: (i: ProductOption) => boolean }[] = [
-    { label: "ราคา", cell: (i) => baht(i.price), best: (i) => i.price === minPrice },
-    { label: "ส่วนลด", cell: (i) => (i.discount_percent ? `-${i.discount_percent}%` : "ไม่มี") },
-    { label: "รีวิว", cell: (i) => `${i.rating.toFixed(1)} (${i.review_count})`, best: (i) => i.rating === maxRating },
-    { label: "ส่งถึง", cell: (i) => shortDate(i.delivery_date), best: (i) => i.delivery_date === earliest },
-    { label: "ร้าน", cell: (i) => i.shop.name },
-    { label: "เหลือ", cell: (i) => `${i.stock} ชิ้น` },
+    { label: t("ราคา"), cell: (i) => baht(i.price), best: (i) => i.price === minPrice },
+    { label: t("ส่วนลด"), cell: (i) => (i.discount_percent ? `-${i.discount_percent}%` : t("ไม่มี")) },
+    { label: t("รีวิว"), cell: (i) => `${i.rating.toFixed(1)} (${i.review_count})`, best: (i) => i.rating === maxRating },
+    { label: t("ส่งถึง"), cell: (i) => shortDate(i.delivery_date), best: (i) => i.delivery_date === earliest },
+    { label: t("ร้าน"), cell: (i) => i.shop.name },
+    { label: t("เหลือ"), cell: (i) => t("{n} ชิ้น", { n: i.stock }) },
   ];
 
   return (
@@ -182,7 +184,7 @@ function Compare({ items, disabled, onBuy }: { items: ProductOption[]; disabled:
                 return (
                   <td key={i.product_id} className={`p-2.5 ${best ? "font-semibold text-basil-dark" : ""}`}>
                     {row.cell(i)}
-                    {best && <span className="mt-0.5 block w-fit whitespace-nowrap rounded bg-basil-soft px-1 text-[10px] font-semibold">ดีสุด</span>}
+                    {best && <span className="mt-0.5 block w-fit whitespace-nowrap rounded bg-basil-soft px-1 text-[10px] font-semibold">{t("ดีสุด")}</span>}
                   </td>
                 );
               })}
@@ -197,7 +199,7 @@ function Compare({ items, disabled, onBuy }: { items: ProductOption[]; disabled:
                   disabled={disabled || i.stock <= 0}
                   className="h-9 w-full rounded-lg bg-basil text-[13px] font-semibold text-paper hover:bg-basil-dark disabled:opacity-40"
                 >
-                  ซื้อ
+                  {t("ซื้อ")}
                 </button>
               </td>
             ))}

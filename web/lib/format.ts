@@ -1,21 +1,22 @@
-const bahtFmt = new Intl.NumberFormat("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-const bahtFmt2 = new Intl.NumberFormat("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const dayFmt = new Intl.DateTimeFormat("th-TH", { weekday: "short", day: "numeric", month: "short" });
-const stampFmt = new Intl.DateTimeFormat("th-TH", {
-  day: "numeric",
-  month: "short",
-  hour: "2-digit",
-  minute: "2-digit",
-  timeZone: "Asia/Bangkok",
-});
+import { locale } from "@/lib/i18n";
 
-export const baht = (n: number) => `฿${(Number.isInteger(n) ? bahtFmt : bahtFmt2).format(n)}`;
+// Formatters follow the language chosen in Settings; they are built per call so a switch takes effect at once.
+const bahtFmt = (min: number) => new Intl.NumberFormat(locale(), { minimumFractionDigits: min, maximumFractionDigits: 2 });
 
-/** A YYYY-MM-DD date (already a Bangkok calendar date) as "ส. 17 ต.ค.". */
+export const baht = (n: number) => `฿${bahtFmt(Number.isInteger(n) ? 0 : 2).format(n)}`;
+
+/** A YYYY-MM-DD date (already a Bangkok calendar date) as "ส. 17 ต.ค." or "Sat 17 Oct". */
 export function shortDate(iso: string) {
   const [y, m, d] = iso.split("-").map(Number);
-  return dayFmt.format(new Date(y, m - 1, d));
+  return new Intl.DateTimeFormat(locale(), { weekday: "short", day: "numeric", month: "short" }).format(new Date(y, m - 1, d));
 }
 
 /** A UTC timestamp shown in Bangkok time, e.g. "15 ต.ค. 22:41". */
-export const stamp = (iso: string) => stampFmt.format(new Date(iso.endsWith("Z") || iso.includes("+") ? iso : `${iso}Z`));
+export const stamp = (iso: string) =>
+  new Intl.DateTimeFormat(locale(), {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Bangkok",
+  }).format(new Date(iso.endsWith("Z") || iso.includes("+") ? iso : `${iso}Z`));

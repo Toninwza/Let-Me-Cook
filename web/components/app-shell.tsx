@@ -1,5 +1,7 @@
 "use client";
 
+import { t } from "@/lib/i18n";
+
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -10,6 +12,7 @@ const NAV = [
   { label: "หน้าแรก", href: "/", icon: "M4 11l8-7 8 7v9H4z" },
   { label: "Chatbot", href: "/chat", icon: "M4 5h16v11H10l-5 4v-4H4z", badge: "AI" },
   { label: "ออเดอร์", href: "/orders", icon: "M6 8h12l-1 12H7L6 8zM9 8a3 3 0 0 1 6 0" },
+  { label: "ตั้งค่า", href: "/settings", icon: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" },
 ];
 
 const ShellContext = createContext<{ openMenu: () => void }>({ openMenu: () => {} });
@@ -22,7 +25,7 @@ export function useShell() {
 export function MenuButton({ className = "" }: { className?: string }) {
   const { openMenu } = useShell();
   return (
-    <button onClick={openMenu} aria-label="เปิดเมนู" className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl md:hidden ${className}`}>
+    <button onClick={openMenu} aria-label={t("เปิดเมนู")} className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl md:hidden ${className}`}>
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
         <path d="M4 7h16M4 12h10M4 17h16" />
       </svg>
@@ -39,7 +42,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <ShellContext.Provider value={{ openMenu }}>
       <div className="flex h-dvh overflow-hidden bg-ground">
         <aside
-          aria-label="เมนูหลัก"
+          aria-label={t("เมนูหลัก")}
           className={`hidden shrink-0 flex-col gap-3.5 border-r border-line bg-paper text-ink transition-[width] duration-200 md:flex ${collapsed ? "w-[76px]" : "w-[260px]"}`}
         >
           <SidebarBody collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
@@ -63,7 +66,7 @@ function SidebarBody({ collapsed, onToggle, onNavigate }: { collapsed: boolean; 
         {onToggle && (
           <button
             onClick={onToggle}
-            aria-label={collapsed ? "ขยายเมนู" : "ย่อเมนู"}
+            aria-label={collapsed ? t("ขยายเมนู") : t("ย่อเมนู")}
             aria-expanded={!collapsed}
             className="flex h-9 w-9 items-center justify-center rounded-[10px] text-faint hover:bg-ground hover:text-ink"
           >
@@ -74,7 +77,7 @@ function SidebarBody({ collapsed, onToggle, onNavigate }: { collapsed: boolean; 
         )}
       </div>
 
-      {!collapsed && <div className="px-6 pt-1.5 text-[11.5px] font-semibold tracking-[0.08em] text-faint">เมนู</div>}
+      {!collapsed && <div className="px-6 pt-1.5 text-[11.5px] font-semibold tracking-[0.08em] text-faint">{t("เมนู")}</div>}
 
       <nav className="flex flex-col gap-1 px-3">
         {NAV.map((n) => {
@@ -94,9 +97,9 @@ function SidebarBody({ collapsed, onToggle, onNavigate }: { collapsed: boolean; 
                   <path d={n.icon} />
                 </svg>
               </span>
-              {!collapsed && <span className={`flex-1 text-[14.5px] ${active ? "font-semibold" : "font-medium"}`}>{n.label}</span>}
+              {!collapsed && <span className={`flex-1 text-[14.5px] ${active ? "font-semibold" : "font-medium"}`}>{t(n.label)}</span>}
               {!collapsed && n.badge && <span className="rounded-full bg-saffron px-[7px] py-px text-[10.5px] font-bold text-[#2B1C00]">{n.badge}</span>}
-              {collapsed && <Tip>{n.label}</Tip>}
+              {collapsed && <Tip>{t(n.label)}</Tip>}
             </Link>
           );
         })}
@@ -118,7 +121,7 @@ function Tip({ children }: { children: React.ReactNode }) {
 
 function UserCard({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
   const { loading, session, name, email, signOut, configured } = useAuth();
-  const initial = (name ?? "ม").slice(0, 1).toUpperCase();
+  const initial = (name ?? t("ม")).slice(0, 1).toUpperCase();
   const onAccount = usePathname() === "/account";
 
   if (!session) {
@@ -136,11 +139,11 @@ function UserCard({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: 
           </span>
           {!collapsed && (
             <span className="flex min-w-0 flex-1 flex-col leading-tight">
-              <span className="text-[13.5px] font-semibold text-ink">{loading ? "กำลังตรวจสอบ" : "เข้าสู่ระบบ"}</span>
-              <span className="text-[11.5px] text-muted">{configured ? "ตอนนี้ใช้เป็นผู้ใช้เดโม่" : "ใช้เป็นผู้ใช้เดโม่"}</span>
+              <span className="text-[13.5px] font-semibold text-ink">{loading ? t("กำลังตรวจสอบ") : t("เข้าสู่ระบบ")}</span>
+              <span className="text-[11.5px] text-muted">{configured ? t("ตอนนี้ใช้เป็นผู้ใช้เดโม่") : t("ใช้เป็นผู้ใช้เดโม่")}</span>
             </span>
           )}
-          {collapsed && <Tip>เข้าสู่ระบบ</Tip>}
+          {collapsed && <Tip>{t("เข้าสู่ระบบ")}</Tip>}
         </Link>
       </div>
     );
@@ -152,7 +155,7 @@ function UserCard({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: 
         <Link
           href="/account"
           onClick={onNavigate}
-          aria-label="ข้อมูลของฉัน"
+          aria-label={t("ข้อมูลของฉัน")}
           aria-current={onAccount ? "page" : undefined}
           className={`flex min-w-0 items-center gap-2.5 rounded-xl ${collapsed ? "" : "flex-1 p-1 hover:bg-ground"}`}
         >
@@ -163,11 +166,11 @@ function UserCard({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: 
               <span className="truncate text-[11.5px] text-muted">{email}</span>
             </span>
           )}
-          {collapsed && <Tip>ข้อมูลของฉัน</Tip>}
+          {collapsed && <Tip>{t("ข้อมูลของฉัน")}</Tip>}
         </Link>
         {!collapsed && (
           <>
-            <button onClick={signOut} aria-label="ออกจากระบบ" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-muted hover:bg-ground hover:text-ink">
+            <button onClick={signOut} aria-label={t("ออกจากระบบ")} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-muted hover:bg-ground hover:text-ink">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M9 4H5v16h4M16 8l4 4-4 4M20 12H9" />
               </svg>
@@ -188,13 +191,13 @@ function Drawer({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 md:hidden">
-      <button aria-label="ปิดเมนู" onClick={onClose} className="absolute inset-0 bg-ink/45" />
+      <button aria-label={t("ปิดเมนู")} onClick={onClose} className="absolute inset-0 bg-ink/45" />
       <aside
-        aria-label="เมนูหลัก"
+        aria-label={t("เมนูหลัก")}
         className="absolute inset-y-0 left-0 flex w-[min(300px,86vw)] flex-col gap-3.5 rounded-r-[28px] bg-paper pb-[max(0.5rem,env(safe-area-inset-bottom))] text-ink shadow-[18px_0_48px_rgba(0,0,0,0.22)]"
       >
         <SidebarBody collapsed={false} onNavigate={onClose} />
-        <button onClick={onClose} aria-label="ปิดเมนู" className="absolute right-3 top-4 flex h-10 w-10 items-center justify-center rounded-xl bg-ground text-muted hover:bg-line hover:text-ink">
+        <button onClick={onClose} aria-label={t("ปิดเมนู")} className="absolute right-3 top-4 flex h-10 w-10 items-center justify-center rounded-xl bg-ground text-muted hover:bg-line hover:text-ink">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
             <path d="M6 6l12 12M18 6L6 18" />
           </svg>

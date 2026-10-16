@@ -1,5 +1,7 @@
 "use client";
 
+import { t } from "@/lib/i18n";
+
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -64,12 +66,12 @@ export default function Landing() {
         <main className="flex min-w-0 flex-[1_1_520px] flex-col justify-center gap-5 px-5 pb-14 pt-4 sm:px-8 md:pt-6 xl:pl-12">
           <span className="flex w-fit items-center gap-2 rounded-full bg-basil-soft px-3 py-1 text-[13px] font-semibold text-basil-dark">
             <span className="h-1.5 w-1.5 rounded-full bg-basil" />
-            AI shopping agent ในแชท
+            {t("AI shopping agent ในแชท")}
           </span>
-          <h1 aria-label="Pull and serve everything you want" className="font-display text-[36px] font-semibold leading-[1.1] tracking-[-0.025em] sm:text-[44px] 2xl:text-[58px]">
+          <h1 aria-label="Pull and serve everything you want" className="font-display text-[30px] font-semibold leading-[1.1] tracking-[-0.025em] min-[400px]:text-[36px] sm:text-[44px] 2xl:text-[58px]">
             <span aria-hidden="true">Pull and serve</span>
             <br />
-            <span aria-hidden="true" className="inline-flex items-center gap-3 sm:gap-3.5">
+            <span aria-hidden="true" className="inline-flex max-w-full flex-wrap items-center gap-x-3 sm:gap-x-3.5">
               everything
               <span className="mt-1.5 inline-flex">
                 <Magnet size={40} />
@@ -77,14 +79,14 @@ export default function Landing() {
               want
             </span>
           </h1>
-          <p className="max-w-[500px] text-[17px] text-ink-2">บอกครั้งเดียว bot ดึงของจากร้านบนแพลตฟอร์มมาให้ คัดเหลือ 3 ตัว แล้วจ่ายจบในแชท</p>
+          <p className="max-w-[500px] text-[17px] text-ink-2">{t("บอกครั้งเดียว bot ดึงของจากร้านบนแพลตฟอร์มมาให้ คัดเหลือ 3 ตัว แล้วจ่ายจบในแชท")}</p>
 
           <form
             onSubmit={onSubmit}
             className="flex max-w-[560px] flex-col gap-2 rounded-[26px] border-[1.5px] border-[#DDE2DE] bg-paper py-4 pl-5 pr-3.5 shadow-[0_18px_50px_rgba(23,33,29,0.08)] focus-within:border-basil"
           >
             <label htmlFor="landing-prompt" className="text-[12.5px] font-semibold text-muted">
-              บอก bot ว่าอยากได้อะไร
+              {t("บอก bot ว่าอยากได้อะไร")}
             </label>
             <textarea
               id="landing-prompt"
@@ -98,13 +100,13 @@ export default function Landing() {
                 }
               }}
               maxLength={2000}
-              placeholder="เช่น หาเก้าอี้ทำงานหลังไม่ปวด งบ 3,000 ส่งก่อนวันอาทิตย์"
+              placeholder={t("เช่น หาเก้าอี้ทำงานหลังไม่ปวด งบ 3,000 ส่งก่อนวันอาทิตย์")}
               className="resize-none bg-transparent text-[17px] leading-relaxed outline-none placeholder:text-faint"
             />
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs text-faint">ส่งแล้วจะเปิดแชทใหม่ให้ทันที</span>
-              <button type="submit" className="flex h-[46px] items-center gap-2 rounded-full bg-basil pl-5 pr-4 font-semibold text-paper hover:bg-basil-dark">
-                เริ่มแชท
+              <span className="text-xs text-faint">{t("ส่งแล้วจะเปิดแชทใหม่ให้ทันที")}</span>
+              <button type="submit" className="flex h-[46px] shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-basil pl-5 pr-4 font-semibold text-paper hover:bg-basil-dark">
+                {t("เริ่มแชท")}
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M5 12h14M13 6l6 6-6 6" />
                 </svg>
@@ -116,10 +118,10 @@ export default function Landing() {
             {EXAMPLES.map((e) => (
               <button
                 key={e}
-                onClick={() => start(e)}
+                onClick={() => start(t(e))}
                 className="min-h-10 rounded-full border border-[#DDE2DE] bg-paper px-3.5 text-[13.5px] text-ink-2 hover:border-basil hover:text-basil"
               >
-                {e}
+                {t(e)}
               </button>
             ))}
           </div>
@@ -133,11 +135,11 @@ export default function Landing() {
                 <path d="M6 8h12l-1 12H7L6 8zM9 8a3 3 0 0 1 6 0" />
               </svg>
             </span>
-            {active > 0 ? `ติดตามออเดอร์ (${active} รายการกำลังดำเนินการ)` : "ติดตามออเดอร์ของฉัน"}
+            {active > 0 ? t("ติดตามออเดอร์ ({n} รายการกำลังดำเนินการ)", { n: active }) : t("ติดตามออเดอร์ของฉัน")}
           </Link>
         </main>
 
-        <section aria-label="สินค้าจากร้านบนแพลตฟอร์ม" className="relative hidden min-h-[780px] flex-[1_1_560px] xl:block">
+        <section aria-label={t("สินค้าจากร้านบนแพลตฟอร์ม")} className="relative hidden min-h-[780px] flex-[1_1_560px] xl:block">
           <svg width="760" height="760" viewBox="0 0 760 760" fill="none" aria-hidden="true" className="absolute left-1/2 top-[440px] -translate-x-1/2 -translate-y-1/2">
             <circle cx="380" cy="380" r="150" stroke="#DCE7E0" strokeWidth="1.5" strokeDasharray="2 8" strokeLinecap="round" />
             <circle cx="380" cy="380" r="240" stroke="#E3ECE6" strokeWidth="1.5" strokeDasharray="2 8" strokeLinecap="round" />
@@ -145,14 +147,14 @@ export default function Landing() {
             <circle cx="380" cy="380" r="96" fill="#F2F6F3" />
           </svg>
           <div className="absolute left-1/2 top-[440px] -translate-x-1/2 -translate-y-[42%]">
-            <Magnet size={150} label="โลโก้แม่เหล็ก PULL" />
+            <Magnet size={150} label={t("โลโก้แม่เหล็ก PULL")} />
           </div>
 
           {products.map((p, i) => (
             <Link
               key={p.product_id}
               href={`/chat?q=${encodeURIComponent(p.title)}`}
-              aria-label={`ถาม bot เรื่อง ${p.title} ${baht(p.price)}`}
+              aria-label={t("ถาม bot เรื่อง {title} {price}", { title: p.title, price: baht(p.price) })}
               className="absolute w-[168px] rounded-[18px] bg-paper shadow-[0_16px_40px_rgba(23,33,29,0.10)] transition-transform hover:z-10 hover:scale-105"
               style={{ left: SPOTS[i].left, top: SPOTS[i].top, transform: `rotate(${SPOTS[i].rot}deg)` }}
             >

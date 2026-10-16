@@ -1,5 +1,7 @@
 "use client";
 
+import { t } from "@/lib/i18n";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -37,7 +39,7 @@ export function PayDone() {
               <path d="M5 12l5 5 9-10" />
             </svg>
           </span>
-          <h1 className="text-xl font-bold">ชำระเงินสำเร็จ</h1>
+          <h1 className="text-xl font-bold">{t("ชำระเงินสำเร็จ")}</h1>
           <p className="text-sm text-ink-2">
             {order.title} · <span className="font-semibold tabular-nums">{baht(order.total)}</span>
           </p>
@@ -45,18 +47,18 @@ export function PayDone() {
       ) : cancelled ? (
         <>
           <Magnet size={48} />
-          <h1 className="text-xl font-bold">ยังไม่ได้ชำระเงิน</h1>
-          <p className="text-sm text-ink-2">กลับไปที่แชทเพื่อจ่ายอีกครั้ง หรือเลือกวิธีจ่ายอื่นได้ครับ</p>
+          <h1 className="text-xl font-bold">{t("ยังไม่ได้ชำระเงิน")}</h1>
+          <p className="text-sm text-ink-2">{t("กลับไปที่แชทเพื่อจ่ายอีกครั้ง หรือเลือกวิธีจ่ายอื่นได้ครับ")}</p>
         </>
       ) : (
         <>
           <span className="h-12 w-12 animate-spin rounded-full border-4 border-basil-soft border-t-basil" />
-          <h1 className="text-xl font-bold">กำลังยืนยันการชำระเงิน</h1>
+          <h1 className="text-xl font-bold">{t("กำลังยืนยันการชำระเงิน")}</h1>
         </>
       )}
-      <p className="text-xs text-muted">ปิดแท็บนี้แล้วกลับไปที่แชทได้เลย สถานะในแชทจะอัปเดตเอง</p>
+      <p className="text-xs text-muted">{t("ปิดแท็บนี้แล้วกลับไปที่แชทได้เลย สถานะในแชทจะอัปเดตเอง")}</p>
       <Link href="/orders" className="flex h-11 items-center rounded-xl bg-basil px-5 font-semibold text-paper transition-colors hover:bg-basil-dark">
-        ดูออเดอร์ของฉัน
+        {t("ดูออเดอร์ของฉัน")}
       </Link>
     </div>
   );

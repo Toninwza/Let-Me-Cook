@@ -1,5 +1,7 @@
 "use client";
 
+import { t } from "@/lib/i18n";
+
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -43,19 +45,19 @@ const TONE: Record<Order["status"], { text: string; strip: string }> = {
 function stripText(o: Order) {
   switch (o.status) {
     case "payment_failed":
-      return "จ่ายไม่สำเร็จ สร้าง QR ใหม่ได้";
+      return t("จ่ายไม่สำเร็จ สร้าง QR ใหม่ได้");
     case "awaiting_payment":
-      return "ยังไม่ได้จ่าย QR PromptPay พร้อมแล้ว";
+      return t("ยังไม่ได้จ่าย QR PromptPay พร้อมแล้ว");
     case "paid":
-      return "จ่ายแล้ว ร้านกำลังเตรียมของ";
+      return t("จ่ายแล้ว ร้านกำลังเตรียมของ");
     case "shipped":
-      return `กำลังจัดส่ง คาดว่าถึง ${shortDate(o.delivery_date)}`;
+      return t("กำลังจัดส่ง คาดว่าถึง {date}", { date: shortDate(o.delivery_date) });
     case "delivered":
-      return "ได้รับสินค้าแล้ว";
+      return t("ได้รับสินค้าแล้ว");
     case "cancelled":
-      return "ออเดอร์นี้ถูกยกเลิก";
+      return t("ออเดอร์นี้ถูกยกเลิก");
     default:
-      return "รอยืนยันออเดอร์";
+      return t("รอยืนยันออเดอร์");
   }
 }
 
@@ -74,7 +76,7 @@ export default function MyOrders() {
       setOrders(list);
       setOpen((cur) => cur ?? list.find((o) => o.status === "shipped")?.order_id ?? null);
     } catch {
-      setError("โหลดออเดอร์ไม่สำเร็จ");
+      setError(t("โหลดออเดอร์ไม่สำเร็จ"));
     }
   }, []);
 
@@ -93,7 +95,7 @@ export default function MyOrders() {
     try {
       await fn();
     } catch (e) {
-      if (!(e instanceof ApiError && e.status === 409)) setError(e instanceof ApiError ? e.message : "ทำรายการไม่สำเร็จ");
+      if (!(e instanceof ApiError && e.status === 409)) setError(e instanceof ApiError ? e.message : t("ทำรายการไม่สำเร็จ"));
     }
     refresh();
   }
@@ -102,7 +104,7 @@ export default function MyOrders() {
     const products = await listProducts(o.shop.shop_id).catch(() => []);
     const p = products.find((x) => x.product_id === o.product_id);
     if (p) setRebuy(p);
-    else setError("สินค้านี้ไม่มีขายแล้ว");
+    else setError(t("สินค้านี้ไม่มีขายแล้ว"));
   }
 
   const shown = (orders ?? []).filter((o) => tab === "all" || o.status === tab);
@@ -113,18 +115,18 @@ export default function MyOrders() {
       <header className="sticky top-0 z-10 bg-paper">
         <div className="flex items-center gap-1.5 px-2 pb-1 pt-2.5 md:px-4 md:pt-4">
           <MenuButton className="text-ink hover:bg-ground" />
-          <h1 className="flex-1 text-lg font-bold">ออเดอร์ของฉัน</h1>
+          <h1 className="flex-1 text-lg font-bold">{t("ออเดอร์ของฉัน")}</h1>
         </div>
-        <div role="tablist" aria-label="สถานะออเดอร์" className="no-scrollbar flex gap-1 overflow-x-auto border-b border-line px-2">
-          {TABS.map((t) => (
+        <div role="tablist" aria-label={t("สถานะออเดอร์")} className="no-scrollbar flex gap-1 overflow-x-auto border-b border-line px-2">
+          {TABS.map((tb) => (
             <button
-              key={t.key}
+              key={tb.key}
               role="tab"
-              aria-selected={tab === t.key}
-              onClick={() => setTab(t.key)}
-              className={`h-11 shrink-0 whitespace-nowrap px-3 text-sm ${tab === t.key ? "font-bold text-basil shadow-[inset_0_-3px_0_var(--color-basil)]" : "font-medium text-muted hover:text-ink"}`}
+              aria-selected={tab === tb.key}
+              onClick={() => setTab(tb.key)}
+              className={`h-11 shrink-0 whitespace-nowrap px-3 text-sm ${tab === tb.key ? "font-bold text-basil shadow-[inset_0_-3px_0_var(--color-basil)]" : "font-medium text-muted hover:text-ink"}`}
             >
-              {t.label}
+              {t(tb.label)}
             </button>
           ))}
         </div>
@@ -133,12 +135,12 @@ export default function MyOrders() {
       {error && <p className="mx-3 mt-3 rounded-xl bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
 
       <main className="flex flex-col gap-2.5 py-2.5">
-        {orders === null && <p className="p-6 text-center text-sm text-muted">กำลังโหลด</p>}
+        {orders === null && <p className="p-6 text-center text-sm text-muted">{t("กำลังโหลด")}</p>}
         {orders !== null && shown.length === 0 && (
           <div className="flex flex-col items-center gap-3 bg-paper px-4 py-10 text-center">
-            <p className="text-sm text-muted">ยังไม่มีออเดอร์ในสถานะนี้</p>
+            <p className="text-sm text-muted">{t("ยังไม่มีออเดอร์ในสถานะนี้")}</p>
             <Link href="/chat" className="flex h-11 items-center rounded-xl bg-basil px-5 font-semibold text-paper hover:bg-basil-dark">
-              บอก bot ว่าอยากได้อะไร
+              {t("บอก bot ว่าอยากได้อะไร")}
             </Link>
           </div>
         )}
@@ -156,7 +158,7 @@ export default function MyOrders() {
                   </svg>
                   {o.shop.name}
                 </span>
-                <span className={`text-[13.5px] font-semibold ${tone.text}`}>{STATUS_LABEL[o.status]}</span>
+                <span className={`text-[13.5px] font-semibold ${tone.text}`}>{t(STATUS_LABEL[o.status])}</span>
               </div>
 
               <div className="flex gap-3">
@@ -173,7 +175,7 @@ export default function MyOrders() {
               </div>
 
               <div className="text-right text-[13.5px] tabular-nums">
-                รวม {o.quantity} รายการ: <span className="text-[15px] font-bold">{baht(o.total)}</span>
+                {t("รวม {n} รายการ:", { n: o.quantity })} <span className="text-[15px] font-bold">{baht(o.total)}</span>
               </div>
 
               <button
@@ -192,10 +194,10 @@ export default function MyOrders() {
                   {o.status !== "cancelled" && <OrderSteps order={o} />}
                   {o.tracking_number && (
                     <div className="flex items-center gap-2 rounded-xl bg-ground py-1 pl-3 pr-1">
-                      <span className="text-xs text-muted">เลขพัสดุ</span>
+                      <span className="text-xs text-muted">{t("เลขพัสดุ")}</span>
                       <span className="flex-1 font-mono text-sm tracking-wider">{o.tracking_number}</span>
                       <button
-                        aria-label="คัดลอกเลขพัสดุ"
+                        aria-label={t("คัดลอกเลขพัสดุ")}
                         onClick={() => navigator.clipboard?.writeText(o.tracking_number ?? "").catch(() => {})}
                         className="flex h-10 w-10 items-center justify-center rounded-lg text-basil hover:bg-basil-soft"
                       >
@@ -207,7 +209,7 @@ export default function MyOrders() {
                     </div>
                   )}
                   <p className="text-xs text-muted">
-                    ส่งไปที่ {o.address.line} {o.address.district} {o.address.province} {o.address.postcode} · ออเดอร์{" "}
+                    {t("ส่งไปที่")} {o.address.line} {o.address.district} {o.address.province} {o.address.postcode} · {t("ออเดอร์")}{" "}
                     <span className="font-mono">{o.order_id}</span>
                   </p>
                 </div>
@@ -216,24 +218,24 @@ export default function MyOrders() {
               <div className="flex justify-end gap-2">
                 {(o.status === "awaiting_payment" || o.status === "payment_failed") && (
                   <>
-                    <Btn onClick={() => act(() => cancelOrder(o.order_id))}>ยกเลิก</Btn>
+                    <Btn onClick={() => act(() => cancelOrder(o.order_id))}>{t("ยกเลิก")}</Btn>
                     <Btn primary onClick={() => setPayOrder(o)}>
-                      จ่ายเงิน
+                      {t("จ่ายเงิน")}
                     </Btn>
                   </>
                 )}
-                {o.status === "paid" && <BtnLink href="/chat">ถาม bot</BtnLink>}
+                {o.status === "paid" && <BtnLink href="/chat">{t("ถาม bot")}</BtnLink>}
                 {o.status === "shipped" && (
                   <>
-                    <BtnLink href="/chat">ถาม bot</BtnLink>
+                    <BtnLink href="/chat">{t("ถาม bot")}</BtnLink>
                     <Btn primary onClick={() => act(() => setOrderStatus(o.order_id, "delivered"))}>
-                      ฉันได้รับสินค้าแล้ว
+                      {t("ฉันได้รับสินค้าแล้ว")}
                     </Btn>
                   </>
                 )}
                 {(o.status === "delivered" || o.status === "cancelled") && (
                   <Btn primary onClick={() => buyAgain(o)}>
-                    ซื้ออีกครั้ง
+                    {t("ซื้ออีกครั้ง")}
                   </Btn>
                 )}
               </div>
