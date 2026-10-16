@@ -1,8 +1,31 @@
-# Spec: bot answers order status, then order calendar data
+# Backend to-do from the web: users, order status, calendar
 
 For anupat2046. Asked by Kiratikorn (web). Contract first, code after (hard rule 2).
+Read this file only, it has everything. Do the parts in order: 0, 1, 2, then 3.
 
-## Problem
+## Part 0: the web already calls these, the API does not have them
+
+Checked against `api/app/routers/` on `dev/tonrak`. Today the API has only `GET /api/users/{id}`,
+no user update, and it never reads the `Authorization: Bearer` header the web sends.
+The web (account page, /welcome after sign-up, nickname in the sidebar) hides the 404/405, so the
+data the user types is silently not saved.
+
+1. **`cart_item` table is not on Supabase yet.** The code has it (commit `9669b7a`). Restart or
+   deploy the API once: `create_all` creates the missing table. Nothing to run by hand.
+2. **`PATCH /api/users/{id}`**, body any of `display_name`, `full_name`, `phone`, `address`
+   (`{line, district, province, postcode}`), returns the full `UserProfile`.
+3. **Columns `full_name` and `phone` on `app_user`**, and the same two fields (optional strings) on
+   `UserProfile` in `app/schemas.py`. `create_all` does not add columns: `ALTER TABLE` by hand or
+   drop and recreate the table. Announce in the team chat first (schema is frozen).
+4. **Read the Supabase JWT.** Verify `Authorization: Bearer <token>`, take `sub` as the user id, and
+   create the `app_user` row on first sight. With no token keep serving the demo user (the web
+   shows it as "ลูกค้า"). Without this every account shares one profile and one cart.
+5. Update `docs/contract.md` for 2 to 4 in the same commit as the code.
+
+Smaller: in Supabase `orders.checkout_session_id` has no UNIQUE but the model says unique. Harmless
+now, fix it with the same `ALTER TABLE` run if you like.
+
+## Part 1 problem: the bot loops on order status
 
 Ask the bot "สถานะออเดอร์เป็นไงบ้าง" and it answers "คุณมิ้นท์ต้องการสอบถามสถานะคำสั่งซื้อใช่ไหมครับ".
 Reply "ใช่" and it asks the same question again, forever.
@@ -42,3 +65,19 @@ Later, announce in the team chat before touching `models.py` (the schema is froz
 | `eta_updated_at` on `Order` | new delivery date when a shop ships late |
 
 `create_all` does not add columns, so drop and recreate the table in Supabase after the change.
+
+## Part 3: one order with many products (later)
+
+Today 1 order is 1 product (`Order.product_id`, `title`, `quantity`, and `payments.create_checkout`
+takes one title and one quantity). The cart on the web can already tick several items and pays them
+one after another.
+
+1. Contract: `POST /api/orders` takes `items: [{product_id, quantity}]`, `Order` returns `items[]`.
+2. Table `order_item` (order_id, product_id, title, unit_price, quantity). Announce before touching
+   `models.py`.
+3. `routers/orders.py`: check stock per item, one subtotal, one U-Tag discount on the total, remove
+   only the paid items from the cart.
+4. `payments.create_checkout`: send one Stripe line item per product.
+5. Decide: one order per shop (the shop page polls `GET /api/orders?shop_id=`) or one mixed order.
+
+The web side (U-Pay, order card, orders page) follows once the contract is agreed.
