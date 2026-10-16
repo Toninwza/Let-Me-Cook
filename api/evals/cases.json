@@ -549,6 +549,79 @@
         "event": "answer",
         "lang": "en"
       }
+    },
+    {
+      "id": "order_status",
+      "turns": [
+        "สถานะออเดอร์เป็นไงบ้าง"
+      ],
+      "orders": [
+        {
+          "order_id": "o_eval_2",
+          "title": "หูฟังออกกำลังกาย SportBuds กันเหงื่อ",
+          "status": "paid",
+          "total": 890.0,
+          "delivery_date": "2026-10-19",
+          "tracking_number": null,
+          "shop_name": "SoundLab",
+          "created_at": "2026-10-16T02:00:00+00:00"
+        },
+        {
+          "order_id": "o_eval_1",
+          "title": "เก้าอี้ทำงาน Ergonomic รุ่น Flex Pro สีดำ",
+          "status": "shipped",
+          "total": 2961.0,
+          "delivery_date": "2026-10-18",
+          "tracking_number": "LMC40271936",
+          "shop_name": "ErgoHome",
+          "created_at": "2026-10-15T09:00:00+00:00"
+        }
+      ],
+      "expect": {
+        "event": "answer",
+        "mentions_any": [
+          "LMC40271936",
+          "จัดส่ง"
+        ]
+      }
+    },
+    {
+      "id": "order_status_none",
+      "turns": [
+        "ออเดอร์ของฉันถึงไหนแล้ว"
+      ],
+      "orders": [],
+      "expect": {
+        "event": "answer",
+        "mentions_any": [
+          "ยังไม่มี",
+          "ไม่มี"
+        ]
+      }
+    },
+    {
+      "id": "order_when_arrives",
+      "turns": [
+        "ของถึงเมื่อไหร่"
+      ],
+      "orders": [
+        {
+          "order_id": "o_eval_2",
+          "title": "หูฟังออกกำลังกาย SportBuds กันเหงื่อ",
+          "status": "paid",
+          "total": 890.0,
+          "delivery_date": "2026-10-19",
+          "tracking_number": null,
+          "shop_name": "SoundLab",
+          "created_at": "2026-10-16T02:00:00+00:00"
+        }
+      ],
+      "expect": {
+        "event": "answer",
+        "mentions_any": [
+          "19"
+        ]
+      }
     }
   ]
 }

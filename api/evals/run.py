@@ -14,7 +14,7 @@ from pathlib import Path
 
 from app import catalog
 from app.ai import run_agent
-from app.schemas import HistoryMessage, UserProfile
+from app.schemas import HistoryMessage, OrderBrief, UserProfile
 
 _HERE = Path(__file__).parent
 _SEED = _HERE.parent / "seed" / "data.json"
@@ -28,8 +28,8 @@ def _profile() -> UserProfile:
     return UserProfile(user_id=user.pop("id"), **user)
 
 
-async def _turn(text: str, history: list[HistoryMessage]) -> list[dict]:
-    return [e async for e in run_agent("s_eval", text, _profile(), history, catalog.today())]
+async def _turn(text: str, history: list[HistoryMessage], orders: list[OrderBrief]) -> list[dict]:
+    return [e async for e in run_agent("s_eval", text, _profile(), history, catalog.today(), orders)]
 
 
 def _bot_message(events: list[dict]) -> HistoryMessage:
@@ -111,6 +111,10 @@ def _check(expect: dict, events: list[dict], prev_options: list[str], prev_shown
         problems.append("expected a text answer only")
     if want == "answer_or_clarify" and (options and items or checkout):
         problems.append("expected answer or clarify")
+    if "mentions_any" in expect:
+        said = "".join(e.get("text", "") for e in events if e["type"] == "message_delta")
+        if not any(m in said for m in expect["mentions_any"]):
+            problems.append(f"reply mentions none of {expect['mentions_any']}: {said[:80]!r}")
     if want == "no_checkout" and checkout:
         problems.append("checkout_request was sent")
     if want == "checkout_request":
@@ -157,7 +161,7 @@ async def _run_case(case: dict, gate: asyncio.Semaphore) -> dict:
         try:
             for i, text in enumerate(case["turns"]):
                 started = time.perf_counter()
-                events = await _turn(text, history)
+                events = await _turn(text, history, [OrderBrief(**o) for o in case.get("orders", [])])
                 if i < len(case["turns"]) - 1:
                     bot = _bot_message(events)
                     prev_options = bot.option_ids or prev_options

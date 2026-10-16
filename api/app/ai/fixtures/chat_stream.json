@@ -1,5 +1,5 @@
 {
-  "_note": "Example run_agent output per turn, matching docs/contract.md. The stub agent replays it. Product ids match api/seed/data.json. Dates assume run_agent was called with today = 2026-10-15 (Asia/Bangkok). The stub plays 'search' by default; send '/clarify', '/no_results', '/pick' or '/error' as the message to play another turn.",
+  "_note": "Example run_agent output per turn, matching docs/contract.md. The stub agent replays it. Product ids match api/seed/data.json. Dates assume run_agent was called with today = 2026-10-15 (Asia/Bangkok). The stub plays 'search' by default; send '/clarify', '/no_results', '/pick', '/error' or '/order_status' as the message to play another turn.",
   "turns": {
     "search": {
       "input": "หาเก้าอี้ทำงาน ergonomic งบ 3000 สีดำ ส่งภายในวันอาทิตย์",
@@ -115,6 +115,15 @@
         { "type": "message_delta", "text": "เปิดหน้า U-Pay ให้แล้วครับ ตรวจยอดก่อนกดยืนยันได้เลย" },
         { "type": "checkout_request", "product_id": "p_chair_ergo_01", "quantity": 1, "payment_method": null },
         { "type": "done" }
+      ]
+    },
+    "order_status": {
+      "input": "สถานะออเดอร์เป็นไงบ้าง",
+      "events": [
+        { "type": "agent_step", "step_id": "parse", "label": "อ่านความต้องการ", "status": "running", "detail": null },
+        { "type": "agent_step", "step_id": "parse", "label": "อ่านความต้องการ", "status": "done", "detail": "ถามสถานะคำสั่งซื้อ" },
+        { "type": "message_delta", "text": "เก้าอี้ทำงาน Ergonomic รุ่น Flex Pro สีดำ กำลังจัดส่งครับ " },
+        { "type": "message_delta", "text": "จะถึงวันที่ 18 ต.ค. เลขพัสดุ LMC40271936" }
       ]
     },
     "error": {

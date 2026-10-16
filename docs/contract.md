@@ -24,6 +24,8 @@ Status tags: **[P0]** built tonight, **[P2]** checkout (by 02:00), **[P3]** Frid
 |---|---|---|
 | `user_id` | str | |
 | `display_name` | str | |
+| `full_name` | str or null | recipient name for deliveries, typed by the user |
+| `phone` | str or null | recipient phone, digits only, `0` + 8 or 9 digits |
 | `address` | Address | default delivery address |
 | `interests` | list[str] | free tags, e.g. `["work from home", "minimal"]` |
 | `purchase_history` | list[PastPurchase] | newest first |
@@ -168,12 +170,19 @@ async def run_agent(
     user_profile: UserProfile,
     history: list[HistoryMessage],   # oldest first, excludes the current `text`
     today: date,                     # current Asia/Bangkok date, to resolve "พรุ่งนี้", "วันศุกร์"
+    orders: list[OrderBrief] | None = None,  # the user's newest orders (route loads 10), newest first
 ) -> AsyncIterator[dict]: ...
 
 async def transcribe(audio_bytes: bytes, mime_type: str) -> str: ...          # ElevenLabs scribe_v2, built
 
 async def speak(text: str) -> bytes: ...                                      # ElevenLabs eleven_v3, MP3, built
 ```
+
+`OrderBrief`: `{ order_id, title, status, total, delivery_date, tracking_number, shop_name, created_at }`
+(fields as in Order). Asked about their orders ("สถานะออเดอร์เป็นไงบ้าง", "ของถึงเมื่อไหร่", "where is
+my order?"), the bot answers from `orders` in one turn with `message_delta` text: status, delivery
+date and tracking number. It never asks back whether the user wants the status. With no orders it
+says so and offers to find a product. Fixture turn: `/order_status`.
 
 `run_agent` yields event dicts exactly as in "Chat events" below. It may end with `done` itself; if
 it does not, the route adds one. If it raises, the route sends `error` then `done`.
@@ -276,6 +285,7 @@ Thai `detail` and a `Retry-After` header in seconds. Limits per IP: chat message
 | POST | `/api/sessions/{id}/messages` | `{ "text": str }` (1 to 2000 chars) | SSE stream, see above |
 | GET | `/api/products` | query `shop_id` optional | `list[ProductHit]` |
 | GET | `/api/users/{id}` | | `UserProfile` |
+| PATCH | `/api/users/{id}` | any of `{ "display_name": str, "full_name": str, "phone": str, "address": Address }` | `UserProfile`. Only the fields sent change. 404 unknown user, 422 bad value (`phone` must match `^0\d{8,9}$`) |
 
 ### [P2] checkout (U-Pay)
 
