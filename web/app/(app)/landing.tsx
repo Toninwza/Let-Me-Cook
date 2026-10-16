@@ -3,9 +3,10 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ProductHit, listProducts } from "@/lib/api";
+import { DEMO_USER_ID, ProductHit, listOrders, listProducts } from "@/lib/api";
 import { baht } from "@/lib/format";
 import { pickVaried } from "@/lib/pick";
+import { MenuButton } from "@/components/app-shell";
 import Magnet from "@/components/magnet";
 import ProductThumb from "@/components/product-thumb";
 
@@ -25,10 +26,14 @@ export default function Landing() {
   const router = useRouter();
   const [text, setText] = useState("");
   const [products, setProducts] = useState<ProductHit[]>([]);
+  const [active, setActive] = useState(0);
 
   useEffect(() => {
     listProducts()
       .then((all) => setProducts(pickVaried(all, SPOTS.length)))
+      .catch(() => {});
+    listOrders({ userId: DEMO_USER_ID })
+      .then((all) => setActive(all.filter((o) => o.status !== "delivered" && o.status !== "cancelled").length))
       .catch(() => {});
   }, []);
 
@@ -43,35 +48,31 @@ export default function Landing() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col overflow-hidden bg-[#FAFAF7]">
-      <header className="flex items-center justify-between gap-3 px-4 py-5 sm:px-8">
-        <Link href="/" className="flex items-center gap-2">
-          <Magnet size={24} />
-          <span className="font-display text-xl font-extrabold">PULL</span>
-        </Link>
-        <nav className="flex items-center gap-1 sm:gap-2">
-          <Link href="/shop/shop_ergohome" className="hidden h-11 items-center rounded-full px-4 font-medium hover:bg-basil-soft hover:text-basil-dark sm:flex">
-            สำหรับร้านค้า
+    <div className="h-full overflow-x-hidden overflow-y-auto bg-[#FAFAF7]">
+      <div className="flex min-h-full flex-col">
+      <header className="flex items-center justify-between gap-3 px-2 py-3 sm:px-6 md:hidden">
+        <div className="flex items-center gap-1 md:hidden">
+          <MenuButton className="text-ink hover:bg-ground" />
+          <Link href="/" className="flex items-center gap-2">
+            <Magnet size={22} />
+            <span className="font-display text-lg font-extrabold">PULL</span>
           </Link>
-          <Link href="/login" className="flex h-11 items-center rounded-full bg-ink px-5 font-semibold text-paper hover:bg-[#2a3530]">
-            เข้าสู่ระบบ
-          </Link>
-        </nav>
+        </div>
       </header>
 
       <div className="flex flex-1 flex-wrap items-stretch">
-        <main className="flex min-w-0 flex-[1_1_520px] flex-col justify-center gap-5 px-4 pb-14 pt-6 sm:px-8 lg:pl-[72px]">
+        <main className="flex min-w-0 flex-[1_1_520px] flex-col justify-center gap-5 px-5 pb-14 pt-4 sm:px-8 md:pt-6 xl:pl-12">
           <span className="flex w-fit items-center gap-2 rounded-full bg-basil-soft px-3 py-1 text-[13px] font-semibold text-basil-dark">
             <span className="h-1.5 w-1.5 rounded-full bg-basil" />
             AI shopping agent ในแชท
           </span>
-          <h1 aria-label="Pull and serve everything you want" className="font-display text-[40px] font-semibold leading-[1.1] tracking-[-0.025em] sm:text-[58px]">
+          <h1 aria-label="Pull and serve everything you want" className="font-display text-[36px] font-semibold leading-[1.1] tracking-[-0.025em] sm:text-[44px] 2xl:text-[58px]">
             <span aria-hidden="true">Pull and serve</span>
             <br />
             <span aria-hidden="true" className="inline-flex items-center gap-3 sm:gap-3.5">
               everything
               <span className="mt-1.5 inline-flex">
-                <Magnet size={46} />
+                <Magnet size={40} />
               </span>
               want
             </span>
@@ -122,9 +123,21 @@ export default function Landing() {
               </button>
             ))}
           </div>
+
+          <Link
+            href="/orders"
+            className="flex w-fit items-center gap-2.5 rounded-2xl border border-[#DDE2DE] bg-paper py-2 pl-2.5 pr-4 text-[14px] font-medium text-ink hover:border-basil"
+          >
+            <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-basil-soft text-basil">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M6 8h12l-1 12H7L6 8zM9 8a3 3 0 0 1 6 0" />
+              </svg>
+            </span>
+            {active > 0 ? `ติดตามออเดอร์ (${active} รายการกำลังดำเนินการ)` : "ติดตามออเดอร์ของฉัน"}
+          </Link>
         </main>
 
-        <section aria-label="สินค้าจากร้านบนแพลตฟอร์ม" className="relative hidden min-h-[780px] flex-[1_1_560px] lg:block">
+        <section aria-label="สินค้าจากร้านบนแพลตฟอร์ม" className="relative hidden min-h-[780px] flex-[1_1_560px] xl:block">
           <svg width="760" height="760" viewBox="0 0 760 760" fill="none" aria-hidden="true" className="absolute left-1/2 top-[440px] -translate-x-1/2 -translate-y-1/2">
             <circle cx="380" cy="380" r="150" stroke="#DCE7E0" strokeWidth="1.5" strokeDasharray="2 8" strokeLinecap="round" />
             <circle cx="380" cy="380" r="240" stroke="#E3ECE6" strokeWidth="1.5" strokeDasharray="2 8" strokeLinecap="round" />
@@ -159,6 +172,7 @@ export default function Landing() {
             </Link>
           ))}
         </section>
+      </div>
       </div>
     </div>
   );

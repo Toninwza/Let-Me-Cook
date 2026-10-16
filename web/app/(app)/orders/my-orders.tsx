@@ -14,6 +14,7 @@ import {
   setOrderStatus,
 } from "@/lib/api";
 import { baht, shortDate } from "@/lib/format";
+import { MenuButton } from "@/components/app-shell";
 import { STATUS_LABEL } from "@/components/order-card";
 import OrderSteps from "@/components/order-steps";
 import ProductThumb from "@/components/product-thumb";
@@ -107,14 +108,11 @@ export default function MyOrders() {
   const shown = (orders ?? []).filter((o) => tab === "all" || o.status === tab);
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-[#EEF0EC] md:max-w-2xl">
+    <div className="h-full overflow-y-auto bg-[#EEF0EC]">
+    <div className="mx-auto flex min-h-full w-full max-w-md flex-col md:max-w-2xl">
       <header className="sticky top-0 z-10 bg-paper">
-        <div className="flex items-center gap-1.5 px-2 pb-1 pt-2.5">
-          <Link href="/chat" aria-label="กลับไปแชท" className="flex h-11 w-11 items-center justify-center rounded-xl hover:bg-ground">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </Link>
+        <div className="flex items-center gap-1.5 px-2 pb-1 pt-2.5 md:px-4 md:pt-4">
+          <MenuButton className="text-ink hover:bg-ground" />
           <h1 className="flex-1 text-lg font-bold">ออเดอร์ของฉัน</h1>
         </div>
         <div role="tablist" aria-label="สถานะออเดอร์" className="no-scrollbar flex gap-1 overflow-x-auto border-b border-line px-2">
@@ -269,6 +267,7 @@ export default function MyOrders() {
           onPaid={refresh}
         />
       )}
+    </div>
     </div>
   );
 }

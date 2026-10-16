@@ -2,8 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ApiError, Order, PaymentMethod, ShopInfo, UserProfile, cancelOrder, confirmOrder, createOrder, getOrder } from "@/lib/api";
+import { ApiError, DEMO_USER_ID, Order, PaymentMethod, ShopInfo, UserProfile, cancelOrder, confirmOrder, createOrder, getOrder, updateUser } from "@/lib/api";
+import { addressError, apiHasContact, contactError, contactPayload, normalizeAddress, normalizeContact } from "@/lib/address";
 import { baht, shortDate } from "@/lib/format";
+import AddressFields from "./address-fields";
+import RecipientFields from "./recipient-fields";
 import ProductThumb from "./product-thumb";
 
 const METHODS: { key: PaymentMethod; label: string; hint: string; badge: string; badgeCls: string }[] = [
@@ -46,6 +49,15 @@ export default function UPaySheet({
   const [order, setOrder] = useState<Order | null>(resumeOrder ?? null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // First checkout without an address: collect it here, then keep it on the account.
+  const [savedUser, setSavedUser] = useState<UserProfile | null>(null);
+  const me = savedUser ?? user;
+  // Recipient name and phone are only required once the API stores them.
+  const wantsContact = apiHasContact(me);
+  const needsAddress = !!me && (addressError(me.address) !== null || (wantsContact && contactError(normalizeContact(me)) !== null));
+  const [draft, setDraft] = useState(() => normalizeAddress(user?.address));
+  const [contactDraft, setContactDraft] = useState(() => normalizeContact(user));
+  const [savingAddress, setSavingAddress] = useState(false);
 
   const onPaidRef = useRef(onPaid);
   useEffect(() => {
@@ -84,8 +96,30 @@ export default function UPaySheet({
   const saved = round(shopSaved + utag);
   const maxQty = Math.max(1, Math.min(product?.stock ?? 1, 20));
 
+  async function saveAddress() {
+    const problem = (wantsContact ? contactError(contactDraft) : null) ?? addressError(draft);
+    if (problem) {
+      setError(problem);
+      return;
+    }
+    setSavingAddress(true);
+    setError(null);
+    try {
+      setSavedUser(
+        await updateUser(me?.user_id ?? DEMO_USER_ID, {
+          ...(wantsContact ? contactPayload(contactDraft) : {}),
+          address: normalizeAddress(draft),
+        }),
+      );
+    } catch (e) {
+      setError(e instanceof ApiError && e.status !== 404 && e.status !== 405 ? e.message : "บันทึกที่อยู่ไม่สำเร็จ ลองใหม่อีกครั้ง");
+    } finally {
+      setSavingAddress(false);
+    }
+  }
+
   async function confirm() {
-    if (!product) return;
+    if (!product || needsAddress) return;
     setBusy(true);
     setError(null);
     try {
@@ -149,14 +183,38 @@ export default function UPaySheet({
           {step === "summary" && product && (
             <>
               <section className="rounded-2xl bg-paper">
-                <Row icon={<PinIcon />}>
-                  <div className="font-semibold">{user?.display_name ?? "ผู้ใช้เดโม่"}</div>
-                  {user && (
-                    <div className="text-[13px] text-ink-2">
-                      {user.address.line} {user.address.district} {user.address.province} {user.address.postcode}
+                {needsAddress ? (
+                  <div className="flex flex-col gap-3 p-3.5">
+                    <div className="flex gap-2.5">
+                      <span className="mt-0.5 shrink-0 text-basil">
+                        <PinIcon />
+                      </span>
+                      <div>
+                        <div className="font-semibold">{wantsContact ? "กรอกข้อมูลผู้รับและที่อยู่จัดส่ง" : "กรอกที่อยู่จัดส่ง"}</div>
+                        <div className="text-[12.5px] text-muted">กรอกครั้งเดียว ครั้งต่อไปใช้ที่อยู่นี้ให้ และแก้ได้ที่ ข้อมูลของฉัน</div>
+                      </div>
                     </div>
-                  )}
-                </Row>
+                    {wantsContact && <RecipientFields value={contactDraft} onChange={setContactDraft} />}
+                    <AddressFields value={draft} onChange={setDraft} />
+                    <button
+                      onClick={saveAddress}
+                      disabled={savingAddress}
+                      className="h-11 rounded-xl bg-ink font-semibold text-paper hover:bg-[#2a3530] disabled:opacity-50"
+                    >
+                      {savingAddress ? "กำลังบันทึก" : "บันทึกที่อยู่"}
+                    </button>
+                  </div>
+                ) : (
+                  <Row icon={<PinIcon />}>
+                    <div className="font-semibold">{me?.full_name || me?.display_name || "ผู้ใช้เดโม่"}</div>
+                    {me && (
+                      <div className="text-[13px] text-ink-2">
+                        {me.address.line} {me.address.district} {me.address.province} {me.address.postcode}
+                      </div>
+                    )}
+                    {me?.phone && <div className="text-[13px] tabular-nums text-ink-2">โทร {me.phone}</div>}
+                  </Row>
+                )}
                 <div className="border-t border-line" />
                 <Row icon={<TruckIcon />}>
                   <div className="font-semibold">ส่งถึง {shortDate(product.delivery_date)}</div>
@@ -374,7 +432,7 @@ export default function UPaySheet({
                 </div>
                 {saved > 0 && <div className="text-xs text-saffron-ink">ประหยัดไป {baht(saved)}</div>}
               </div>
-              <button onClick={confirm} disabled={busy} className="h-12 rounded-xl bg-basil px-6 font-semibold text-paper hover:bg-basil-dark disabled:opacity-50">
+              <button onClick={confirm} disabled={busy || needsAddress} className="h-12 rounded-xl bg-basil px-6 font-semibold text-paper hover:bg-basil-dark disabled:opacity-50">
                 {busy ? "กำลังสร้าง QR" : "ยืนยันสั่งซื้อ"}
               </button>
             </div>

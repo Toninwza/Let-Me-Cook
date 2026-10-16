@@ -1,12 +1,6 @@
-import type { Metadata } from "next";
-import Home from "./home";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "หน้าแรก · PULL" };
-
-export default function HomePage() {
-  return (
-    <div className="min-h-dvh bg-forest">
-      <Home />
-    </div>
-  );
+/** The old /home is the landing page now. */
+export default function HomeRedirect() {
+  redirect("/");
 }

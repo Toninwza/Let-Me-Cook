@@ -1,5 +1,7 @@
 // Types mirror docs/contract.md. Change the contract first.
 
+import { supabase } from "@/lib/supabase";
+
 export const DEMO_USER_ID = "u_demo";
 
 export type ShopInfo = {
@@ -41,6 +43,9 @@ export type PastPurchase = {
 export type UserProfile = {
   user_id: string;
   display_name: string;
+  /** Recipient name and phone. Absent until the API has the fields (see docs/handoff.md). */
+  full_name?: string | null;
+  phone?: string | null;
   address: Address;
   interests: string[];
   purchase_history: PastPurchase[];
@@ -108,10 +113,18 @@ export class ApiError extends Error {
   }
 }
 
+/** Supabase access token as a Bearer header; empty for guests (the API then serves the demo user). */
+async function authHeader(): Promise<Record<string, string>> {
+  if (!supabase) return {};
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  return token ? { authorization: `Bearer ${token}` } : {};
+}
+
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     ...init,
-    headers: { "content-type": "application/json", ...init?.headers },
+    headers: { "content-type": "application/json", ...(await authHeader()), ...init?.headers },
   });
   if (!res.ok) {
     let detail = "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ลองใหม่อีกครั้ง";
@@ -131,6 +144,10 @@ export const createSession = (userId?: string) =>
   });
 
 export const getUser = (id: string) => call<UserProfile>(`/api/users/${id}`);
+
+/** Needs PATCH /api/users/{id} on the API (see docs/handoff.md). Every field is optional. */
+export const updateUser = (id: string, body: { display_name?: string; full_name?: string; phone?: string; address?: Address }) =>
+  call<UserProfile>(`/api/users/${id}`, { method: "PATCH", body: JSON.stringify(body) });
 
 export const listProducts = (shopId?: string) =>
   call<ProductHit[]>(`/api/products${shopId ? `?shop_id=${encodeURIComponent(shopId)}` : ""}`);
@@ -185,7 +202,7 @@ export async function* sendMessage(
 ): AsyncGenerator<AgentEvent> {
   const res = await fetch(`/api/sessions/${sessionId}/messages`, {
     method: "POST",
-    headers: { "content-type": "application/json", accept: "text/event-stream" },
+    headers: { "content-type": "application/json", accept: "text/event-stream", ...(await authHeader()) },
     body: JSON.stringify({ text }),
     signal,
   });
