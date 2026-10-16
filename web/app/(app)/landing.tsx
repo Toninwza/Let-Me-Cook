@@ -3,7 +3,8 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { DEMO_USER_ID, ProductHit, listOrders, listProducts } from "@/lib/api";
+import { DEMO_USER_ID, ProductHit, listOrders, listProducts, transcribe } from "@/lib/api";
+import { MAX_RECORD_S, WARN_RECORD_S, useRecorder } from "@/lib/hooks";
 import { baht } from "@/lib/format";
 import { pickVaried } from "@/lib/pick";
 import { MenuButton } from "@/components/app-shell";
@@ -27,6 +28,12 @@ export default function Landing() {
   const [text, setText] = useState("");
   const [products, setProducts] = useState<ProductHit[]>([]);
   const [active, setActive] = useState(0);
+  const [transcribing, setTranscribing] = useState(false);
+  const [micError, setMicError] = useState<string | null>(null);
+  // Tap the mic to start, tap again to send. The words go to the chat as the first message.
+  const recorder = useRecorder((blob) => {
+    if (blob) sendVoice(blob);
+  });
 
   useEffect(() => {
     listProducts()
@@ -40,6 +47,33 @@ export default function Landing() {
   function start(q: string) {
     const clean = q.trim();
     router.push(clean ? `/chat?q=${encodeURIComponent(clean)}` : "/chat");
+  }
+
+  async function sendVoice(blob: Blob) {
+    setTranscribing(true);
+    try {
+      const heard = await transcribe(blob);
+      if (!heard.trim()) throw new Error("empty");
+      start(heard);
+    } catch {
+      setMicError("ฟังเสียงไม่ออก ลองพูดใหม่อีกครั้งครับ");
+      setTranscribing(false);
+    }
+  }
+
+  async function toggleMic() {
+    setMicError(null);
+    if (recorder.recording) {
+      const blob = await recorder.stop();
+      if (blob) sendVoice(blob);
+      else setMicError("สั้นเกินไป แตะไมค์แล้วพูดอีกครั้งครับ");
+      return;
+    }
+    try {
+      await recorder.start();
+    } catch {
+      setMicError("เปิดไมค์ไม่ได้ อนุญาตไมค์ในเบราว์เซอร์ก่อนครับ");
+    }
   }
 
   function onSubmit(e: FormEvent) {
@@ -102,13 +136,69 @@ export default function Landing() {
               className="resize-none bg-transparent text-[17px] leading-relaxed outline-none placeholder:text-faint"
             />
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs text-faint">ส่งแล้วจะเปิดแชทใหม่ให้ทันที</span>
+              {recorder.recording ? (
+                <span role="status" aria-live="polite" className="flex min-w-0 items-center gap-2 text-sm">
+                  <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-danger" />
+                  <span className={`font-semibold tabular-nums ${recorder.seconds >= WARN_RECORD_S ? "text-danger" : "text-ink"}`}>
+                    {Math.floor(recorder.seconds / 60)}:{String(recorder.seconds % 60).padStart(2, "0")}
+                  </span>
+                  <span className="truncate text-xs text-muted">
+                    {recorder.seconds >= WARN_RECORD_S ? `ส่งอัตโนมัติใน ${MAX_RECORD_S - recorder.seconds} วิ` : "กำลังฟัง แตะไมค์เพื่อส่ง"}
+                  </span>
+                </span>
+              ) : transcribing ? (
+                <span role="status" className="flex items-center gap-2 text-xs text-muted">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-saffron" />
+                  กำลังถอดเสียง
+                </span>
+              ) : micError ? (
+                <span role="alert" className="text-xs text-danger">
+                  {micError}
+                </span>
+              ) : (
+                <span className="text-xs text-faint">พิมพ์ หรือแตะไมค์เพื่อพูด</span>
+              )}
+              <div className="flex shrink-0 items-center gap-2">
+              {recorder.recording && (
+                <button
+                  type="button"
+                  onClick={() => recorder.cancel()}
+                  aria-label="ยกเลิกการอัด"
+                  className="flex h-[46px] w-[46px] items-center justify-center rounded-full text-danger hover:bg-danger-soft"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+                  </svg>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={toggleMic}
+                disabled={transcribing}
+                aria-label={recorder.recording ? "ส่งเสียง" : "พูดกับ bot"}
+                aria-pressed={recorder.recording}
+                className={`flex h-[46px] w-[46px] items-center justify-center rounded-full disabled:opacity-40 ${
+                  recorder.recording ? "bg-danger text-paper" : "border border-line-strong text-ink hover:border-basil hover:bg-basil-soft hover:text-basil"
+                }`}
+              >
+                {recorder.recording ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <rect x="6" y="6" width="12" height="12" rx="2.5" />
+                  </svg>
+                ) : (
+                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="9" y="3" width="6" height="11" rx="3" />
+                    <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+                  </svg>
+                )}
+              </button>
               <button type="submit" className="flex h-[46px] items-center gap-2 rounded-full bg-basil pl-5 pr-4 font-semibold text-paper hover:bg-basil-dark">
                 เริ่มแชท
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M5 12h14M13 6l6 6-6 6" />
                 </svg>
               </button>
+              </div>
             </div>
           </form>
 
